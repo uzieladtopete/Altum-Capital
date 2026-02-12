@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 
@@ -15,15 +15,41 @@ const markerIcon = new L.DivIcon({
 
 function MapUpdater({ center, zoom }) {
   const map = useMap()
+  const lastCenterRef = useRef(null)
+  const userInteractedRef = useRef(false)
+
   useEffect(() => {
-    if (center) map.setView([center.lat, center.lng], zoom ?? 15)
+    const onInteraction = () => { userInteractedRef.current = true }
+    map.on('zoomstart', onInteraction)
+    map.on('movestart', onInteraction)
+    return () => {
+      map.off('zoomstart', onInteraction)
+      map.off('movestart', onInteraction)
+    }
+  }, [map])
+
+  useEffect(() => {
+    if (!center) return
+    const key = `${center.lat}-${center.lng}`
+    if (lastCenterRef.current === key && userInteractedRef.current) return
+    lastCenterRef.current = key
+    userInteractedRef.current = false
+    map.setView([center.lat, center.lng], zoom ?? 15)
   }, [map, center?.lat, center?.lng, zoom])
   return null
 }
 
-export default function MapaPreview({ center = null, markerPosition = null, className = '' }) {
+export default function MapaPreview({ center = null, markerPosition = null, onMarkerMove = null, className = '' }) {
   const viewCenter = center ? [center.lat, center.lng] : CENTER_GDJ
   const zoom = 15
+  const isDraggable = Boolean(onMarkerMove)
+
+  const markerPos = useMemo(() => {
+    if (!markerPosition) return null
+    return [markerPosition.lat, markerPosition.lng]
+  }, [markerPosition?.lat, markerPosition?.lng])
+
+  const markerKey = markerPos ? `${markerPos[0]}-${markerPos[1]}` : 'none'
 
   return (
     <div className={`rounded-lg overflow-hidden border border-gray-200 ${className}`}>
@@ -36,10 +62,22 @@ export default function MapaPreview({ center = null, markerPosition = null, clas
       >
         <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
         <MapUpdater center={center} zoom={zoom} />
-        {markerPosition && (
+        {markerPos && (
           <Marker
-            position={[markerPosition.lat, markerPosition.lng]}
+            key={markerKey}
+            position={markerPos}
             icon={markerIcon}
+            draggable={isDraggable}
+            eventHandlers={
+              isDraggable
+                ? {
+                    dragend: (e) => {
+                      const latlng = e.target.getLatLng()
+                      onMarkerMove(latlng.lat, latlng.lng)
+                    },
+                  }
+                : undefined
+            }
           />
         )}
       </MapContainer>

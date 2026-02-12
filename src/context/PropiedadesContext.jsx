@@ -18,9 +18,17 @@ export function PropiedadesProvider({ children }) {
     setList((prev) => prev.filter((p) => p.id !== id))
   }, [])
 
+  const updatePropiedad = useCallback((id, data) => {
+    setList((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, ...data, id: p.id } : p
+      )
+    )
+  }, [])
+
   const getFiltered = useCallback((filters) => applyFilters(list, filters), [list])
 
-  const value = { list, addPropiedad, removePropiedad, getFiltered }
+  const value = { list, addPropiedad, removePropiedad, updatePropiedad, getFiltered }
   return (
     <PropiedadesContext.Provider value={value}>
       {children}

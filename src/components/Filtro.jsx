@@ -59,11 +59,11 @@ export default function Filtro() {
     <section className="bg-white border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             <select
               value={filters.ciudad}
               onChange={(e) => handleChange('ciudad', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
+              className="w-full min-w-0 px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
               aria-label="Ciudad"
             >
               {CIUDADES.map(({ value, label }) => (
@@ -73,7 +73,7 @@ export default function Filtro() {
             <select
               value={filters.tipo}
               onChange={(e) => handleChange('tipo', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
+              className="w-full min-w-[11rem] px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
               aria-label="Tipo de propiedad"
             >
               {TIPOS.map(({ value, label }) => (

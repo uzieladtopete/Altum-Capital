@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePropiedades } from '../../context/PropiedadesContext'
-import { geocodeAddress } from '../../services/geocoding'
+import { useToast } from '../../context/ToastContext'
+import { geocodeAddress, DEFAULT_CENTER } from '../../services/geocoding'
 import MapaPreview from '../../components/MapaPreview'
+import InputDireccion from '../../components/InputDireccion'
 
 const CIUDADES = [
   { value: 'Guadalajara', label: 'Guadalajara' },
@@ -29,6 +31,8 @@ const initialForm = {
   estado: 'Disponible',
   imagen: '',
   direccion: '',
+  lat: '',
+  lng: '',
 }
 
 const DEBOUNCE_MS = 800
@@ -36,10 +40,9 @@ const DEBOUNCE_MS = 800
 export default function CrearPropiedadPage() {
   const navigate = useNavigate()
   const { addPropiedad } = usePropiedades()
+  const { addToast } = useToast()
   const fileInputRef = useRef(null)
   const [form, setForm] = useState(initialForm)
-  const [error, setError] = useState('')
-  const [showSuccess, setShowSuccess] = useState(false)
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [previewCoords, setPreviewCoords] = useState(null)
   const [geocodeError, setGeocodeError] = useState(false)
@@ -53,7 +56,6 @@ export default function CrearPropiedadPage() {
 
   const handleChange = useCallback((field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
-    setError('')
     if (field === 'direccion') setGeocodeError(false)
   }, [])
 
@@ -68,6 +70,7 @@ export default function CrearPropiedadPage() {
       geocodeAddress(dir).then((coords) => {
         if (coords) {
           setPreviewCoords(coords)
+          setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }))
           setGeocodeError(false)
         } else {
           setPreviewCoords(null)
@@ -86,7 +89,6 @@ export default function CrearPropiedadPage() {
     })
     setPreviewCoords(null)
     setGeocodeError(false)
-    setError('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }, [])
 
@@ -98,35 +100,36 @@ export default function CrearPropiedadPage() {
     const direccion = form.direccion.trim()
 
     if (!titulo) {
-      setError('El título es obligatorio.')
+      addToast({ type: 'error', message: 'El título es obligatorio.' })
       return
     }
     if (Number.isNaN(precio) || precio < 0) {
-      setError('Precio debe ser un número válido.')
+      addToast({ type: 'error', message: 'Precio debe ser un número válido.' })
       return
     }
     if (Number.isNaN(m2) || m2 <= 0) {
-      setError('Los m² deben ser un número mayor a 0.')
-      return
-    }
-    if (!direccion) {
-      setError('La dirección es obligatoria.')
+      addToast({ type: 'error', message: 'Los m² deben ser un número mayor a 0.' })
       return
     }
     const imagenUrl = imagePreviewUrl || form.imagen?.trim()
     if (!imagenUrl) {
-      setError('Sube una imagen.')
+      addToast({ type: 'error', message: 'Sube una imagen.' })
       return
     }
 
-    setIsSubmitting(true)
-    setError('')
-    const coords = await geocodeAddress(direccion)
-    setIsSubmitting(false)
-    if (!coords) {
-      setError('No se pudo encontrar la dirección. Verifica e intenta de nuevo.')
-      return
+    const hasManualCoords =
+      typeof form.lat === 'number' && typeof form.lng === 'number' && !Number.isNaN(form.lat) && !Number.isNaN(form.lng)
+    let coords = hasManualCoords ? { lat: form.lat, lng: form.lng } : null
+    if (!coords && direccion) {
+      setIsSubmitting(true)
+      coords = await geocodeAddress(direccion)
+      setIsSubmitting(false)
+      if (!coords) {
+        addToast({ type: 'error', message: 'No se pudo encontrar la dirección. Verifica e intenta de nuevo.' })
+        return
+      }
     }
+    if (!coords) coords = DEFAULT_CENTER
 
     addPropiedad({
       titulo,
@@ -141,10 +144,14 @@ export default function CrearPropiedadPage() {
       imagen: imagenUrl,
       direccion,
     })
-    setShowSuccess(true)
+    addToast({ type: 'success', message: 'Propiedad creada correctamente' })
     resetForm()
-    setTimeout(() => setShowSuccess(false), 3000)
   }
+
+  const effectiveCoords =
+    typeof form.lat === 'number' && typeof form.lng === 'number' && !Number.isNaN(form.lat) && !Number.isNaN(form.lng)
+      ? { lat: form.lat, lng: form.lng }
+      : previewCoords
 
   return (
     <div>
@@ -152,21 +159,7 @@ export default function CrearPropiedadPage() {
         Crear propiedad
       </h1>
 
-      {showSuccess && (
-        <div
-          className="mb-6 p-4 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200"
-          role="status"
-        >
-          Propiedad creada correctamente
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
-        {error && (
-          <p className="text-red-600 text-sm" role="alert">
-            {error}
-          </p>
-        )}
         <div>
           <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-1">
             Título
@@ -257,20 +250,24 @@ export default function CrearPropiedadPage() {
         </div>
         <div>
           <label htmlFor="direccion" className="block text-sm font-medium text-gray-700 mb-1">
-            Dirección completa
+            Dirección (opcional; escribe para buscar)
           </label>
-          <input
+          <InputDireccion
             id="direccion"
-            type="text"
             value={form.direccion}
-            onChange={(e) => handleChange('direccion', e.target.value)}
-            placeholder="Av. Naciones Unidas 6700, Zapopan, Jalisco"
+            onChange={(val) => handleChange('direccion', val)}
+            onCoordsSelect={({ lat, lng }) => {
+              setPreviewCoords({ lat, lng })
+              setForm((prev) => ({ ...prev, lat, lng }))
+            }}
+            placeholder="Escribe tu dirección para buscar en el mapa..."
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
           />
           <div className="mt-2">
             <MapaPreview
-              center={previewCoords ?? undefined}
-              markerPosition={previewCoords ?? undefined}
+              center={effectiveCoords ?? undefined}
+              markerPosition={effectiveCoords ?? undefined}
+              onMarkerMove={(lat, lng) => setForm((prev) => ({ ...prev, lat, lng }))}
             />
           </div>
           {geocodeError && form.direccion.trim() && (
@@ -297,7 +294,6 @@ export default function CrearPropiedadPage() {
                 setImagePreviewUrl('')
                 setForm((prev) => ({ ...prev, imagen: '' }))
               }
-              setError('')
             }}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
           />

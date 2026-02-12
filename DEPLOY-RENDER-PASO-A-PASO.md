@@ -147,3 +147,4 @@ No hace falta tocar **Environment** (variables de entorno) por ahora.
 - **No me deja conectar GitHub:** En GitHub → Settings del repo → asegúrate de que Render tenga acceso; en Render, en account settings, revisa la conexión con GitHub.
 
 Cuando tengas la URL de Render (por ejemplo `https://altum-capital.onrender.com`), esa es tu página en vivo. Las propiedades que agregas desde el admin se siguen perdiendo al recargar hasta que más adelante conectes un backend y base de datos; esta guía es solo para dejar la página publicada en internet.
+

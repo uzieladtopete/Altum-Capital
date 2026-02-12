@@ -58,10 +58,47 @@ function FlyToSelected({ selectedId, propiedadesConCoords, markerRefs }) {
     if (!selectedId || !propiedadesConCoords.length) return
     const prop = propiedadesConCoords.find((p) => p.id === selectedId)
     if (!prop) return
+    
+    // Cerrar cualquier popup abierto primero
+    map.closePopup()
+    
     map.flyTo([prop.lat, prop.lng], 15, { duration: 0.5 })
-    const marker = markerRefs.current?.[selectedId]
-    if (marker && typeof marker.openPopup === 'function') {
-      setTimeout(() => marker.openPopup(), 600)
+    
+    // Intentar abrir el popup después de que termine la animación de vuelo
+    const openPopup = () => {
+      const marker = markerRefs.current?.[selectedId]
+      if (marker) {
+        // Intentar diferentes formas de acceder al marker según la versión de react-leaflet
+        let leafletMarker = null
+        if (marker.leafletElement) {
+          leafletMarker = marker.leafletElement
+        } else if (marker.instance) {
+          leafletMarker = marker.instance
+        } else if (marker.openPopup) {
+          leafletMarker = marker
+        } else if (marker._leaflet_id) {
+          // Es una instancia directa de Leaflet
+          leafletMarker = marker
+        }
+        
+        if (leafletMarker && typeof leafletMarker.openPopup === 'function') {
+          try {
+            leafletMarker.openPopup()
+          } catch (err) {
+            console.warn('No se pudo abrir el popup automáticamente:', err)
+          }
+        }
+      }
+    }
+    
+    // Esperar a que termine la animación de vuelo (500ms) + delay para asegurar que el marker esté listo
+    const timeout1 = setTimeout(openPopup, 800)
+    // También intentar después de un tiempo adicional por si acaso
+    const timeout2 = setTimeout(openPopup, 1200)
+    
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
     }
   }, [map, selectedId, propiedadesConCoords, markerRefs])
   return null
@@ -103,7 +140,22 @@ export default function Mapa({ propiedades = [], selectedId = null }) {
             position={[prop.lat, prop.lng]}
             icon={markerIcon}
             ref={(ref) => {
-              if (ref?.instance) markerRefs.current[prop.id] = ref.instance
+              if (ref) {
+                // Guardar la referencia del marker - intentar diferentes formas según react-leaflet v4
+                const markerInstance = ref.leafletElement || ref.instance || ref
+                if (markerInstance) {
+                  markerRefs.current[prop.id] = markerInstance
+                }
+              } else {
+                delete markerRefs.current[prop.id]
+              }
+            }}
+            eventHandlers={{
+              add: (e) => {
+                // Asegurar que el ref se guarde cuando el marker se añade al mapa
+                // e.target es la instancia de Leaflet del marker
+                markerRefs.current[prop.id] = e.target
+              },
             }}
           >
             <Popup className="mapa-popup" minWidth={240} maxWidth={280}>

@@ -13,11 +13,11 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+      {/* Sidebar: fixed on desktop below navbar (h-16 md:h-20), drawer on mobile */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-56 bg-white border-r border-gray-200 transform transition-transform lg:transform-none ${
+        className={`fixed z-40 w-56 bg-white border-r border-gray-200 transform transition-transform lg:transform-none ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } lg:translate-x-0 inset-y-0 left-0 lg:top-20 lg:h-[calc(100vh-5rem)]`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100 lg:justify-start">
           <span className="font-serif font-semibold text-gray-900">Panel Admin</span>
@@ -60,8 +60,8 @@ export default function AdminLayout() {
         />
       )}
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main: offset on desktop so content is beside fixed sidebar */}
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-56">
         <header className="sticky top-16 lg:top-20 z-10 flex items-center h-14 px-4 bg-white border-b border-gray-100 lg:px-8">
           <button
             type="button"
