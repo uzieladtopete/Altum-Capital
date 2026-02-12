@@ -24,6 +24,44 @@ const ESTADOS = [
 
 const DEBOUNCE_MS = 800
 
+/**
+ * Convierte coordenadas DMS (grados/minutos/segundos) a decimal
+ * Formato esperado: "20°41'31"N 103°20'36"W" o variaciones
+ */
+function parseDMSToDecimal(dmsString) {
+  const trimmed = dmsString.trim()
+  if (!trimmed) return null
+
+  const dmsPattern = /(\d+)[°\s]+(\d+)['\s]+(\d+)["]*\s*([NSEW])/gi
+  const matches = [...trimmed.matchAll(dmsPattern)]
+
+  if (matches.length < 2) return null
+
+  const latMatch = matches[0]
+  const lngMatch = matches[1]
+
+  const parseDMS = (degrees, minutes, seconds, direction) => {
+    const deg = Number(degrees)
+    const min = Number(minutes)
+    const sec = Number(seconds)
+    if (Number.isNaN(deg) || Number.isNaN(min) || Number.isNaN(sec)) return null
+
+    let decimal = deg + min / 60 + sec / 3600
+    if (direction.toUpperCase() === 'S' || direction.toUpperCase() === 'W') {
+      decimal = -decimal
+    }
+    return decimal
+  }
+
+  const lat = parseDMS(latMatch[1], latMatch[2], latMatch[3], latMatch[4])
+  const lng = parseDMS(lngMatch[1], lngMatch[2], lngMatch[3], lngMatch[4])
+
+  if (lat == null || lng == null) return null
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+
+  return { lat, lng }
+}
+
 export default function EditarPropiedadPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -48,6 +86,8 @@ export default function EditarPropiedadPage() {
   const [previewCoords, setPreviewCoords] = useState(null)
   const [geocodeError, setGeocodeError] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [inputMode, setInputMode] = useState('direccion')
+  const [coordenadasDMS, setCoordenadasDMS] = useState('')
 
   useEffect(() => {
     if (prop) {
@@ -66,6 +106,12 @@ export default function EditarPropiedadPage() {
       if (prop.lat != null && prop.lng != null) {
         setPreviewCoords({ lat: prop.lat, lng: prop.lng })
       }
+      // Si tiene coordenadas pero no dirección, mostrar en modo coordenadas
+      if ((prop.lat != null || prop.lng != null) && !prop.direccion) {
+        setInputMode('coordenadas')
+      } else {
+        setInputMode('direccion')
+      }
     }
   }, [prop])
 
@@ -81,6 +127,7 @@ export default function EditarPropiedadPage() {
   }, [])
 
   useEffect(() => {
+    if (inputMode !== 'direccion') return
     const dir = form.direccion.trim()
     if (!dir) {
       setGeocodeError(false)
@@ -98,7 +145,24 @@ export default function EditarPropiedadPage() {
       })
     }, DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [form.direccion])
+  }, [form.direccion, inputMode])
+
+  useEffect(() => {
+    if (inputMode !== 'coordenadas') return
+    const dms = coordenadasDMS.trim()
+    if (!dms) {
+      setGeocodeError(false)
+      return
+    }
+    const coords = parseDMSToDecimal(dms)
+    if (coords) {
+      setPreviewCoords(coords)
+      setForm((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }))
+      setGeocodeError(false)
+    } else {
+      setGeocodeError(true)
+    }
+  }, [coordenadasDMS, inputMode])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -273,20 +337,77 @@ export default function EditarPropiedadPage() {
           </select>
         </div>
         <div>
-          <label htmlFor="direccion" className="block text-sm font-medium text-gray-700 mb-1">
-            Dirección (opcional; escribe para buscar)
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Ubicación
           </label>
-          <InputDireccion
-            id="direccion"
-            value={form.direccion}
-            onChange={(val) => handleChange('direccion', val)}
-            onCoordsSelect={({ lat, lng }) => {
-              setPreviewCoords({ lat, lng })
-              setForm((prev) => ({ ...prev, lat, lng }))
-            }}
-            placeholder="Escribe tu dirección para buscar en el mapa..."
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-          />
+          <div className="mb-2">
+            <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+              <button
+                type="button"
+                onClick={() => {
+                  setInputMode('direccion')
+                  setCoordenadasDMS('')
+                  setGeocodeError(false)
+                }}
+                className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${
+                  inputMode === 'direccion'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Dirección
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setInputMode('coordenadas')
+                  setForm((prev) => ({ ...prev, direccion: '' }))
+                  setGeocodeError(false)
+                }}
+                className={`px-4 py-1.5 text-sm font-medium rounded transition-colors ${
+                  inputMode === 'coordenadas'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Coordenadas
+              </button>
+            </div>
+          </div>
+          {inputMode === 'direccion' ? (
+            <>
+              <InputDireccion
+                id="direccion"
+                value={form.direccion}
+                onChange={(val) => handleChange('direccion', val)}
+                onCoordsSelect={({ lat, lng }) => {
+                  setPreviewCoords({ lat, lng })
+                  setForm((prev) => ({ ...prev, lat, lng }))
+                }}
+                placeholder="Escribe tu dirección para buscar en el mapa..."
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+              />
+              {geocodeError && form.direccion.trim() && (
+                <p className="mt-2 text-sm text-amber-700">Dirección no encontrada</p>
+              )}
+            </>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={coordenadasDMS}
+                onChange={(e) => setCoordenadasDMS(e.target.value)}
+                placeholder={'Ej: 20°41\'31"N 103°20\'36"W'}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 font-mono text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Formato: grados°minutos&apos;segundos&quot; dirección (ej: 20°41&apos;31&quot;N 103°20&apos;36&quot;W)
+              </p>
+              {geocodeError && coordenadasDMS.trim() && (
+                <p className="mt-2 text-sm text-amber-700">Formato de coordenadas inválido</p>
+              )}
+            </>
+          )}
           <div className="mt-2">
             <MapaPreview
               center={effectiveCoords ?? undefined}
@@ -294,9 +415,6 @@ export default function EditarPropiedadPage() {
               onMarkerMove={(lat, lng) => setForm((prev) => ({ ...prev, lat, lng }))}
             />
           </div>
-          {geocodeError && form.direccion.trim() && (
-            <p className="mt-2 text-sm text-amber-700">Dirección no encontrada</p>
-          )}
         </div>
         <div>
           <label htmlFor="imagen" className="block text-sm font-medium text-gray-700 mb-1">

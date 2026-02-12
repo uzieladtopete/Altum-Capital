@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const CIUDADES = [
@@ -25,6 +25,10 @@ const initialFilters = {
 export default function Filtro() {
   const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState(initialFilters)
+  const [presupuestoOpen, setPresupuestoOpen] = useState(false)
+  const [m2Open, setM2Open] = useState(false)
+  const presupuestoRef = useRef(null)
+  const m2Ref = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -53,6 +57,40 @@ export default function Filtro() {
 
   const handleClear = () => {
     setFilters(initialFilters)
+    setPresupuestoOpen(false)
+    setM2Open(false)
+  }
+
+  // Cerrar desplegables al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (presupuestoRef.current && !presupuestoRef.current.contains(e.target)) {
+        setPresupuestoOpen(false)
+      }
+      if (m2Ref.current && !m2Ref.current.contains(e.target)) {
+        setM2Open(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const getPresupuestoLabel = () => {
+    if (filters.minPrecio && filters.maxPrecio) {
+      return `$${Number(filters.minPrecio).toLocaleString()} - $${Number(filters.maxPrecio).toLocaleString()}`
+    }
+    if (filters.minPrecio) return `Desde $${Number(filters.minPrecio).toLocaleString()}`
+    if (filters.maxPrecio) return `Hasta $${Number(filters.maxPrecio).toLocaleString()}`
+    return 'Presupuesto'
+  }
+
+  const getM2Label = () => {
+    if (filters.minM2 && filters.maxM2) {
+      return `${filters.minM2} - ${filters.maxM2} m²`
+    }
+    if (filters.minM2) return `Desde ${filters.minM2} m²`
+    if (filters.maxM2) return `Hasta ${filters.maxM2} m²`
+    return 'm²'
   }
 
   return (
@@ -80,42 +118,112 @@ export default function Filtro() {
                 <option key={value || 'all'} value={value}>{label}</option>
               ))}
             </select>
-            <input
-              type="number"
-              placeholder="Presupuesto mín"
-              value={filters.minPrecio}
-              onChange={(e) => handleChange('minPrecio', e.target.value)}
-              min="0"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
-              aria-label="Presupuesto mínimo"
-            />
-            <input
-              type="number"
-              placeholder="Presupuesto máx"
-              value={filters.maxPrecio}
-              onChange={(e) => handleChange('maxPrecio', e.target.value)}
-              min="0"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
-              aria-label="Presupuesto máximo"
-            />
-            <input
-              type="number"
-              placeholder="m² mín"
-              value={filters.minM2}
-              onChange={(e) => handleChange('minM2', e.target.value)}
-              min="0"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
-              aria-label="Metros cuadrados mínimos"
-            />
-            <input
-              type="number"
-              placeholder="m² máx"
-              value={filters.maxM2}
-              onChange={(e) => handleChange('maxM2', e.target.value)}
-              min="0"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
-              aria-label="Metros cuadrados máximos"
-            />
+            
+            {/* Presupuesto desplegable */}
+            <div ref={presupuestoRef} className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setPresupuestoOpen(!presupuestoOpen)
+                  setM2Open(false)
+                }}
+                className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white text-left flex items-center justify-between transition ${
+                  presupuestoOpen ? 'ring-2 ring-accent/20 border-accent' : 'focus:ring-2 focus:ring-accent/20 focus:border-accent'
+                } ${filters.minPrecio || filters.maxPrecio ? 'font-medium' : ''}`}
+                aria-label="Presupuesto"
+              >
+                <span className="truncate">{getPresupuestoLabel()}</span>
+                <svg
+                  className={`w-4 h-4 ml-2 transition-transform ${presupuestoOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {presupuestoOpen && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Desde</label>
+                    <input
+                      type="number"
+                      placeholder="Mínimo"
+                      value={filters.minPrecio}
+                      onChange={(e) => handleChange('minPrecio', e.target.value)}
+                      min="0"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Hasta</label>
+                    <input
+                      type="number"
+                      placeholder="Máximo"
+                      value={filters.maxPrecio}
+                      onChange={(e) => handleChange('maxPrecio', e.target.value)}
+                      min="0"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* m² desplegable */}
+            <div ref={m2Ref} className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setM2Open(!m2Open)
+                  setPresupuestoOpen(false)
+                }}
+                className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white text-left flex items-center justify-between transition ${
+                  m2Open ? 'ring-2 ring-accent/20 border-accent' : 'focus:ring-2 focus:ring-accent/20 focus:border-accent'
+                } ${filters.minM2 || filters.maxM2 ? 'font-medium' : ''}`}
+                aria-label="Metros cuadrados"
+              >
+                <span className="truncate">{getM2Label()}</span>
+                <svg
+                  className={`w-4 h-4 ml-2 transition-transform ${m2Open ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {m2Open && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Desde</label>
+                    <input
+                      type="number"
+                      placeholder="Mínimo"
+                      value={filters.minM2}
+                      onChange={(e) => handleChange('minM2', e.target.value)}
+                      min="0"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Hasta</label>
+                    <input
+                      type="number"
+                      placeholder="Máximo"
+                      value={filters.maxM2}
+                      onChange={(e) => handleChange('maxM2', e.target.value)}
+                      min="0"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="submit"
