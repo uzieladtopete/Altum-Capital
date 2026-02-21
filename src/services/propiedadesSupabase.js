@@ -35,6 +35,7 @@ const mapFromDB = (prop) => {
 }
 
 export async function getPropiedades(filters = {}) {
+  if (!supabase) throw new Error('Supabase no configurado') // PropiedadesContext usará datos locales
   let query = supabase.from(TABLE).select('*')
 
   // Aplicar filtros
@@ -69,6 +70,7 @@ export async function getPropiedades(filters = {}) {
 }
 
 export async function getPropiedadById(id) {
+  if (!supabase) return null
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -84,9 +86,8 @@ export async function getPropiedadById(id) {
 }
 
 export async function createPropiedad(propiedad) {
-  // Convertir lng -> long para la base de datos
+  if (!supabase) throw new Error('Supabase no configurado')
   const dbProp = mapToDB(propiedad)
-  
   const { data, error } = await supabase
     .from(TABLE)
     .insert([dbProp])
@@ -102,9 +103,8 @@ export async function createPropiedad(propiedad) {
 }
 
 export async function updatePropiedad(id, updates) {
-  // Convertir lng -> long para la base de datos
+  if (!supabase) throw new Error('Supabase no configurado')
   const dbUpdates = mapToDB(updates)
-  
   const { data, error } = await supabase
     .from(TABLE)
     .update({ ...dbUpdates, updated_at: new Date().toISOString() })
@@ -121,6 +121,7 @@ export async function updatePropiedad(id, updates) {
 }
 
 export async function deletePropiedad(id) {
+  if (!supabase) throw new Error('Supabase no configurado')
   const { error } = await supabase
     .from(TABLE)
     .delete()

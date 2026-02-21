@@ -16,6 +16,10 @@ export default function CTA() {
       addToast({ type: 'error', message: 'Completa todos los campos' })
       return
     }
+    if (!supabase) {
+      addToast({ type: 'error', message: 'Envío no disponible. Configura Supabase en el servidor.' })
+      return
+    }
     setLoading(true)
     try {
       const { error } = await supabase.from('consultas').insert({

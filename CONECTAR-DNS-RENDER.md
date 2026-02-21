@@ -17,6 +17,21 @@ Es decir: no son dos números mágicos; son **nombre + valor** que Render te mue
 
 ---
 
+## 0. Variables de entorno (evitar página en blanco)
+
+Si tu sitio en Render se ve **en blanco**, suele ser porque faltan las variables de Supabase. Vite las inyecta en el build, así que deben estar definidas **antes** de que Render ejecute `npm run build`.
+
+1. En el **Dashboard** de Render, entra a tu **Static Site** (o Web Service).
+2. Ve a **Environment** (Environment Variables).
+3. Añade:
+   - **Key:** `VITE_SUPABASE_URL` → **Value:** la URL de tu proyecto (ej. `https://xxxx.supabase.co`).
+   - **Key:** `VITE_SUPABASE_ANON_KEY` → **Value:** la clave anónima (anon/public) de Supabase (Settings → API en el proyecto Supabase).
+4. Guarda y haz un **nuevo deploy** (Manual Deploy o push al repo) para que el build use estas variables.
+
+Sin ellas, la app puede cargar pero auth y datos de Supabase no funcionarán; con los últimos cambios la página ya no debería quedar en blanco aunque falten, pero conviene configurarlas.
+
+---
+
 ## 1. Tener el servicio en Render
 
 - Crea una cuenta en [render.com](https://render.com) si no tienes.
