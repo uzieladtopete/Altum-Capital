@@ -19,7 +19,7 @@ Es decir: no son dos números mágicos; son **nombre + valor** que Render te mue
 
 ## 0. Variables de entorno (evitar página en blanco)
 
-Si tu sitio en Render se ve **en blanco**, suele ser porque faltan las variables de Supabase. Vite las inyecta en el build, así que deben estar definidas **antes** de que Render ejecute `npm run build`.
+Si tu sitio en Render se ve **en blanco** o en **Resultados** aparece **«0 propiedades encontradas»**, suele ser porque faltan las variables de Supabase. Vite las inyecta en el build, así que deben estar definidas **antes** de que Render ejecute `npm run build`.
 
 1. En el **Dashboard** de Render, entra a tu **Static Site** (o Web Service).
 2. Ve a **Environment** (Environment Variables).

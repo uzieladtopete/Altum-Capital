@@ -25,18 +25,34 @@ export default function ResultsPage() {
   // Cargar propiedades filtradas cuando cambian los filtros
   useEffect(() => {
     let cancelled = false
-    
+
+    const filterListClientSide = (items, f) => {
+      if (!Array.isArray(items)) return []
+      return items.filter((p) => {
+        if (f.ciudad && (p.ciudad || '') !== f.ciudad) return false
+        if (f.tipo && (p.tipo || '') !== f.tipo) return false
+        const precio = Number(p.precio)
+        if (f.minPrecio && !Number.isNaN(precio) && precio < Number(f.minPrecio)) return false
+        if (f.maxPrecio && !Number.isNaN(precio) && precio > Number(f.maxPrecio)) return false
+        const m2 = Number(p.m2)
+        if (f.minM2 && !Number.isNaN(m2) && m2 < Number(f.minM2)) return false
+        if (f.maxM2 && !Number.isNaN(m2) && m2 > Number(f.maxM2)) return false
+        return true
+      })
+    }
+
     const loadPropiedades = async () => {
       setLoading(true)
       try {
         const filtered = await getFiltered(filters)
         if (!cancelled) {
-          setPropiedades(Array.isArray(filtered) ? filtered : [])
+          const next = Array.isArray(filtered) ? filtered : []
+          setPropiedades(next.length > 0 ? next : filterListClientSide(list, filters))
         }
       } catch (error) {
         console.error('Error loading propiedades:', error)
         if (!cancelled) {
-          setPropiedades([])
+          setPropiedades(filterListClientSide(list, filters))
         }
       } finally {
         if (!cancelled) {
@@ -44,13 +60,13 @@ export default function ResultsPage() {
         }
       }
     }
-    
+
     loadPropiedades()
-    
+
     return () => {
       cancelled = true
     }
-  }, [getFiltered, filters])
+  }, [getFiltered, filters, list])
 
   return (
     <div className="min-h-screen bg-gray-50">
