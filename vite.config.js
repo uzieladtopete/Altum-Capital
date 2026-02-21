@@ -39,6 +39,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true, // no usar otro puerto si 5173 está ocupado
   },
+  build: {
+    chunkSizeWarningLimit: 600, // evita el warning cuando un chunk supera 500 kB (ej. leaflet + supabase)
+  },
   plugins: [
     react(),
     {
