@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { usePropiedades } from '../context/PropiedadesContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { useContactModal } from '../context/ContactModalContext'
+import { getPropiedadById } from '../services/propiedadesSupabase'
 import ImagenPropiedad from '../components/ImagenPropiedad'
 import MapaPreview from '../components/MapaPreview'
 
@@ -19,13 +21,26 @@ export default function PropiedadDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { list, loading: propiedadesLoading } = usePropiedades()
+  const { list, loading: propiedadesLoading, updatePropiedad: updatePropiedadContext } = usePropiedades()
   const { role } = useAuth()
   const { addToast } = useToast()
-  const propiedad = list.find((p) => p.id === id)
+  const { openContactModal } = useContactModal()
+  const propiedadFromList = list.find((p) => p.id === id)
+  const [propiedadFull, setPropiedadFull] = useState(null)
+  const propiedad = propiedadFull ?? propiedadFromList
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [showContactModal, setShowContactModal] = useState(false)
   const isAdmin = role === 'admin'
+
+  // Cargar propiedad por ID para tener siempre datos completos (amenidades, recámaras, etc. desde detalles_prop)
+  useEffect(() => {
+    if (!id) return
+    setPropiedadFull(null)
+    let cancelled = false
+    getPropiedadById(id).then((data) => {
+      if (!cancelled && data) setPropiedadFull(data)
+    })
+    return () => { cancelled = true }
+  }, [id])
   
   // Detectar si viene del inicio o de resultados
   // Si viene del inicio (desde ProjectCard), el state tendrá from: '/'
@@ -51,7 +66,6 @@ export default function PropiedadDetailPage() {
     // Cleanup: resetear estado cuando se sale de la página
     return () => {
       setSelectedImageIndex(0)
-      setShowContactModal(false)
     }
   }, [id])
 
@@ -68,7 +82,6 @@ export default function PropiedadDetailPage() {
   const amenidadesGeneralInit = Array.isArray(amenidadesFromProp.general) ? amenidadesFromProp.general : []
   const amenidadesPoliticasInit = Array.isArray(amenidadesFromProp.politicas) ? amenidadesFromProp.politicas : []
   const amenidadesRecreacionInit = Array.isArray(amenidadesFromProp.recreacion) ? amenidadesFromProp.recreacion : []
-
   // Hooks de Casa Providencia (siempre declarados para no variar el número de hooks)
   const seccionesDefault = [
     { titulo: 'La Entrada', subtitulo: 'El Proyecto Perfecto Para Ti', descripcion: 'Al cruzar el umbral de Casa Providencia, te recibe un espacio diseñado para impresionar.', imagen: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80', lado: 'right' },
@@ -133,7 +146,8 @@ export default function PropiedadDetailPage() {
       try {
         const parsed = JSON.parse(raw)
         setEditOverride((prev) => ({
-          titulo: parsed.titulo ?? prev.titulo,
+          // Título siempre desde el servidor para que coincida con la tarjeta/listado
+          titulo: propiedad.titulo ?? parsed.titulo ?? prev.titulo,
           tituloSeccion: parsed.tituloSeccion ?? prev.tituloSeccion,
           imagen: parsed.imagen ?? prev.imagen,
           galeria: Array.isArray(parsed.galeria) ? parsed.galeria : prev.galeria,
@@ -149,7 +163,14 @@ export default function PropiedadDetailPage() {
         }))
       } catch (_) {}
     }
-  }, [id, propiedad?.id, propiedad?.descripcion, STORAGE_KEY_DETAIL])
+  }, [id, propiedad?.id, propiedad?.descripcion, propiedad?.titulo, STORAGE_KEY_DETAIL])
+
+  // Mantener titulo en sync con el servidor cuando cambia (p. ej. tras guardar), sin pisar si está editando
+  useEffect(() => {
+    if (!isEditingDetail && propiedad?.titulo != null) {
+      setEditOverride((prev) => (prev.titulo !== propiedad.titulo ? { ...prev, titulo: propiedad.titulo } : prev))
+    }
+  }, [propiedad?.titulo, isEditingDetail])
 
   useEffect(() => {
     if (isEditingDetail) {
@@ -516,21 +537,14 @@ export default function PropiedadDetailPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowContactModal(true)}
+                  onClick={openContactModal}
                   className="w-full px-6 py-4 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors text-lg"
                 >
                   Me interesa
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const contactoSection = document.getElementById('contacto')
-                    if (contactoSection) {
-                      contactoSection.scrollIntoView({ behavior: 'smooth' })
-                    } else {
-                      navigate('/#contacto')
-                    }
-                  }}
+                  onClick={openContactModal}
                   className="w-full px-6 py-4 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-lg"
                 >
                   Contactar
@@ -539,54 +553,6 @@ export default function PropiedadDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Contact Modal */}
-        {showContactModal && (
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setShowContactModal(false)}
-          >
-            <div
-              className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl relative z-[10000]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-serif text-xl font-semibold text-gray-900">Me interesa esta propiedad</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowContactModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <p className="text-gray-600 mb-4">
-                Para más información sobre <strong>{propiedad.titulo}</strong>, por favor contáctanos.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowContactModal(false)
-                    navigate('/#contacto')
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  Ir a contacto
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowContactModal(false)}
-                  className="px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     )
   }
@@ -621,10 +587,28 @@ export default function PropiedadDetailPage() {
   ]
   const usarAmenidadesEjemplo = amenidadesGeneral.length === 0 && amenidadesPoliticas.length === 0 && amenidadesRecreacion.length === 0
 
-  const saveDetailOverride = () => {
+  const saveDetailOverride = async () => {
     localStorage.setItem(STORAGE_KEY_DETAIL, JSON.stringify(editOverride))
     setIsEditingDetail(false)
-    addToast({ type: 'success', message: 'Cambios guardados. Se aplican solo en esta vista (panel de edición en página).' })
+    try {
+      if (id && updatePropiedadContext) {
+        await updatePropiedadContext(id, {
+          titulo: (editOverride.titulo ?? propiedad?.titulo ?? '').trim() || propiedad?.titulo,
+          descripcion: editOverride.descripcion ?? propiedad?.descripcion,
+          imagen: editOverride.imagen ?? propiedad?.imagen,
+          galeria: (editOverride.galeria?.length > 0 ? editOverride.galeria : propiedad?.galeria) ?? [],
+        })
+        const refreshed = await getPropiedadById(id)
+        if (refreshed) setPropiedadFull(refreshed)
+        addToast({ type: 'success', message: 'Base de datos actualizada correctamente.' })
+      } else {
+        addToast({ type: 'success', message: 'Cambios guardados (solo en esta vista).' })
+      }
+    } catch (e) {
+      console.error('Error al guardar en la base de datos:', e)
+      const msg = e?.message || String(e)
+      addToast({ type: 'error', message: msg.includes('galeria') ? 'Falta la columna "galeria" en Propiedades. Ejecuta add-galeria-propiedades.sql en tu base de datos.' : `No se pudo guardar en la base de datos: ${msg.slice(0, 80)}. Los cambios se aplican solo en esta vista.` })
+    }
   }
 
   const cancelDetailOverride = () => {
@@ -703,20 +687,20 @@ export default function PropiedadDetailPage() {
         </div>
       )}
 
-      {/* Título y acciones (Español / Compartir) */}
+      {/* Título (mismo que columna titulo en Supabase) y acciones (Español / Compartir) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {isEditingDetail ? (
             <input
               type="text"
-              value={editOverride.tituloSeccion}
-              onChange={(e) => setEditOverride((o) => ({ ...o, tituloSeccion: e.target.value }))}
+              value={editOverride.titulo ?? ''}
+              onChange={(e) => setEditOverride((o) => ({ ...o, titulo: e.target.value }))}
               className="font-serif text-2xl md:text-3xl font-semibold text-gray-900 border border-gray-300 rounded-lg px-3 py-2 w-full max-w-xl"
-              placeholder="Ej: Departamento en venta Lomas"
+              placeholder="Ej: Comercial en venta Centro"
             />
           ) : (
             <h1 className="font-serif text-2xl md:text-3xl font-semibold text-gray-900">
-              {tituloSeccionMostrado}
+              {tituloMostrado}
             </h1>
           )}
           <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -869,7 +853,7 @@ export default function PropiedadDetailPage() {
                   value={(editOverride.amenidades.general || []).map((x) => (typeof x === 'string' ? x : x.nombre || x)).join('\n')}
                   onChange={(e) => setEditOverride((o) => ({
                     ...o,
-                    amenidades: { ...o.amenidades, general: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) },
+                    amenidades: { ...o.amenidades, general: e.target.value.split('\n').filter((s) => s.trim() !== '') },
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[80px]"
                   placeholder="Accesibilidad para adultos mayores&#10;Portero&#10;..."
@@ -881,7 +865,7 @@ export default function PropiedadDetailPage() {
                   value={(editOverride.amenidades.politicas || []).map((x) => (typeof x === 'string' ? x : x.nombre || x)).join('\n')}
                   onChange={(e) => setEditOverride((o) => ({
                     ...o,
-                    amenidades: { ...o.amenidades, politicas: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) },
+                    amenidades: { ...o.amenidades, politicas: e.target.value.split('\n').filter((s) => s.trim() !== '') },
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[60px]"
                   placeholder="Mascotas permitidas"
@@ -893,13 +877,13 @@ export default function PropiedadDetailPage() {
                   value={(editOverride.amenidades.recreacion || []).map((x) => (typeof x === 'string' ? x : x.nombre || x)).join('\n')}
                   onChange={(e) => setEditOverride((o) => ({
                     ...o,
-                    amenidades: { ...o.amenidades, recreacion: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) },
+                    amenidades: { ...o.amenidades, recreacion: e.target.value.split('\n').filter((s) => s.trim() !== '') },
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[80px]"
                   placeholder="Alberca&#10;Gimnasio&#10;..."
                 />
               </div>
-            </>
+              </>
           ) : (
             <>
           {/* General */}
@@ -1044,18 +1028,14 @@ export default function PropiedadDetailPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              onClick={() => setShowContactModal(true)}
+              onClick={openContactModal}
               className="px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >
               Me interesa
             </button>
             <button
               type="button"
-              onClick={() => {
-                const contactoSection = document.getElementById('contacto')
-                if (contactoSection) contactoSection.scrollIntoView({ behavior: 'smooth' })
-                else navigate('/#contacto')
-              }}
+              onClick={openContactModal}
               className="px-6 py-3 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
             >
               Contactar
@@ -1063,54 +1043,6 @@ export default function PropiedadDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Contact Modal */}
-      {showContactModal && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setShowContactModal(false)}
-        >
-          <div
-            className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl relative z-[10000]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-serif text-xl font-semibold text-gray-900">Me interesa esta propiedad</h3>
-              <button
-                type="button"
-                onClick={() => setShowContactModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Para más información sobre <strong>{propiedad.titulo}</strong>, por favor contáctanos.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowContactModal(false)
-                  navigate('/#contacto')
-                }}
-                className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Ir a contacto
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowContactModal(false)}
-                className="px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

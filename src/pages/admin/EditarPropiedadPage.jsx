@@ -74,6 +74,7 @@ export default function EditarPropiedadPage() {
   const [form, setForm] = useState({
     titulo: '',
     ciudad: 'Guadalajara',
+    zona: '',
     tipo: 'Residencial',
     precio: '',
     m2: '',
@@ -92,6 +93,9 @@ export default function EditarPropiedadPage() {
     amenidadesGeneral: [],
     amenidadesPoliticas: [],
     amenidadesRecreacion: [],
+    amenidadesOtroGeneral: [],
+    amenidadesOtroPoliticas: [],
+    amenidadesOtroRecreacion: [],
   })
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [previewCoords, setPreviewCoords] = useState(null)
@@ -104,12 +108,22 @@ export default function EditarPropiedadPage() {
     if (prop) {
       const galeria = Array.isArray(prop.galeria) ? prop.galeria.join('\n') : ''
       const am = prop.amenidades && typeof prop.amenidades === 'object' ? prop.amenidades : {}
-      const amenidadesGeneral = Array.isArray(am.general) ? [...am.general] : []
-      const amenidadesPoliticas = Array.isArray(am.politicas) ? [...am.politicas] : []
-      const amenidadesRecreacion = Array.isArray(am.recreacion) ? [...am.recreacion] : []
+      const listGeneral = AMENIDADES_OPCIONES.general
+      const listPoliticas = AMENIDADES_OPCIONES.politicas
+      const listRecreacion = AMENIDADES_OPCIONES.recreacion
+      const arrGeneral = Array.isArray(am.general) ? am.general : []
+      const arrPoliticas = Array.isArray(am.politicas) ? am.politicas : []
+      const arrRecreacion = Array.isArray(am.recreacion) ? am.recreacion : []
+      const amenidadesGeneral = arrGeneral.filter((x) => listGeneral.includes(x))
+      const amenidadesOtroGeneral = arrGeneral.filter((x) => !listGeneral.includes(x))
+      const amenidadesPoliticas = arrPoliticas.filter((x) => listPoliticas.includes(x))
+      const amenidadesOtroPoliticas = arrPoliticas.filter((x) => !listPoliticas.includes(x))
+      const amenidadesRecreacion = arrRecreacion.filter((x) => listRecreacion.includes(x))
+      const amenidadesOtroRecreacion = arrRecreacion.filter((x) => !listRecreacion.includes(x))
       setForm({
         titulo: prop.titulo ?? '',
         ciudad: prop.ciudad ?? 'Guadalajara',
+        zona: prop.zona ?? '',
         tipo: prop.tipo ?? 'Residencial',
         precio: prop.precio != null ? String(prop.precio) : '',
         m2: prop.m2 != null ? String(prop.m2) : '',
@@ -128,6 +142,9 @@ export default function EditarPropiedadPage() {
         amenidadesGeneral,
         amenidadesPoliticas,
         amenidadesRecreacion,
+        amenidadesOtroGeneral,
+        amenidadesOtroPoliticas,
+        amenidadesOtroRecreacion,
       })
       if (prop.lat != null && prop.lng != null) {
         setPreviewCoords({ lat: prop.lat, lng: prop.lng })
@@ -239,9 +256,9 @@ export default function EditarPropiedadPage() {
       ? form.galeria.split('\n').map((u) => u.trim()).filter(Boolean)
       : []
     const amenidades = {
-      general: Array.isArray(form.amenidadesGeneral) ? form.amenidadesGeneral : [],
-      politicas: Array.isArray(form.amenidadesPoliticas) ? form.amenidadesPoliticas : [],
-      recreacion: Array.isArray(form.amenidadesRecreacion) ? form.amenidadesRecreacion : [],
+      general: [...(form.amenidadesGeneral || []), ...(form.amenidadesOtroGeneral || [])],
+      politicas: [...(form.amenidadesPoliticas || []), ...(form.amenidadesOtroPoliticas || [])],
+      recreacion: [...(form.amenidadesRecreacion || []), ...(form.amenidadesOtroRecreacion || [])],
     }
 
     try {
@@ -249,6 +266,7 @@ export default function EditarPropiedadPage() {
       await updatePropiedad(id, {
         titulo,
         ciudad: form.ciudad,
+        zona: form.zona?.trim() || null,
         tipo: form.tipo,
         precio,
         m2,
@@ -270,7 +288,7 @@ export default function EditarPropiedadPage() {
       navigate('/admin')
     } catch (err) {
       console.error(err)
-      addToast({ type: 'error', message: err?.message || 'No se pudo guardar. Revisa la consola y que Supabase tenga las columnas necesarias.' })
+      addToast({ type: 'error', message: err?.message || 'No se pudo guardar. Revisa la consola y que la base de datos tenga las columnas necesarias.' })
     } finally {
       setIsSubmitting(false)
     }
@@ -327,6 +345,19 @@ export default function EditarPropiedadPage() {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label htmlFor="zona" className="block text-sm font-medium text-gray-700 mb-1">
+            Zona
+          </label>
+          <input
+            id="zona"
+            type="text"
+            value={form.zona}
+            onChange={(e) => handleChange('zona', e.target.value)}
+            placeholder="Ej. Chapalita, Andares, Providencia, Centro"
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+          />
         </div>
         <div>
           <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
@@ -565,6 +596,13 @@ export default function EditarPropiedadPage() {
                   )
                 })}
               </div>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
+              <textarea
+                value={(form.amenidadesOtroGeneral || []).join('\n')}
+                onChange={(e) => handleChange('amenidadesOtroGeneral', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
+                placeholder="Ej: Estacionamiento visitas"
+              />
             </div>
             {/* Políticas */}
             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
@@ -613,6 +651,13 @@ export default function EditarPropiedadPage() {
                   )
                 })}
               </div>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
+              <textarea
+                value={(form.amenidadesOtroPoliticas || []).join('\n')}
+                onChange={(e) => handleChange('amenidadesOtroPoliticas', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
+                placeholder="Ej: Renta flexible"
+              />
             </div>
             {/* Recreación */}
             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
@@ -661,6 +706,13 @@ export default function EditarPropiedadPage() {
                   )
                 })}
               </div>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
+              <textarea
+                value={(form.amenidadesOtroRecreacion || []).join('\n')}
+                onChange={(e) => handleChange('amenidadesOtroRecreacion', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
+                placeholder="Ej: Roof garden"
+              />
             </div>
           </div>
         </div>
@@ -739,7 +791,7 @@ export default function EditarPropiedadPage() {
           <div id="mapa-de-ubicacion" className="mt-4 pt-4 border-t-2 border-gray-300">
             <h3 className="text-sm font-semibold text-gray-800 mb-1">Mapa de ubicación</h3>
             <p className="text-sm text-gray-600 mb-2">
-              Haz clic en el mapa para colocar el puntero o arrástralo para ajustar. Guarda los cambios para actualizar en Supabase.
+              Haz clic en el mapa para colocar el puntero o arrástralo para ajustar. Guarda los cambios para actualizar en la base de datos.
             </p>
             <div className="mt-2 h-[400px] min-h-[400px] w-full rounded-lg overflow-hidden border-2 border-gray-400 bg-gray-100">
               <MapaPreview

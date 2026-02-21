@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import AnimateOnScroll from './AnimateOnScroll'
 
 const CIUDADES = [
   { value: '', label: 'Ciudad' },
@@ -95,8 +96,9 @@ export default function Filtro() {
 
   return (
     <section className="bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <AnimateOnScroll direction="up">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             <select
               value={filters.ciudad}
@@ -243,7 +245,8 @@ export default function Filtro() {
             </div>
           </div>
         </form>
-      </div>
+        </div>
+      </AnimateOnScroll>
     </section>
   )
 }

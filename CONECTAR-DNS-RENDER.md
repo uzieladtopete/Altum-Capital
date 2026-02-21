@@ -30,6 +30,53 @@ Si tu sitio en Render se ve **en blanco** o en **Resultados** aparece **«0 prop
 
 Sin ellas, la app puede cargar pero auth y datos de Supabase no funcionarán; con los últimos cambios la página ya no debería quedar en blanco aunque falten, pero conviene configurarlas.
 
+### Si sigue en blanco después de añadir las variables
+
+1. **Limpia la caché del build y vuelve a desplegar:** En Render → tu Static Site → **Manual Deploy** → elige **"Clear build cache & deploy"**. Así el build se ejecuta de nuevo con las variables actuales.
+2. **Comprueba la configuración del Static Site:** Build Command = `npm install && npm run build` (o `npm run build`), Publish Directory = **`dist`**.
+3. **Abre la consola del navegador:** En la página en blanco, pulsa F12 (o Cmd+Option+I en Mac) → pestaña **Console**. Si hay un error en rojo, ese mensaje indica qué está fallando.
+4. **Prueba en ventana privada** o borra la caché del navegador por si estuvieras viendo una versión antigua.
+
+### El dominio propio (ej. altum-capital.com.mx) sale en blanco pero altum-capital.onrender.com sí carga
+
+Si **la URL de Render funciona** y **el dominio con DNS (altum-capital.com.mx) no**, el fallo suele ser del dominio/SSL, no del código.
+
+1. **Comprobar en Render que el dominio esté bien**
+   - Dashboard → tu **Static Site** → **Settings** → **Custom Domains**.
+   - Debe aparecer **altum-capital.com.mx** (y si usas www, **www.altum-capital.com.mx**).
+   - El estado debe ser **Verified** o **Active**. Si pone **Pending** o **Certificate provisioning**, espera unos minutos (o hasta 24 h); Render está generando el certificado SSL para tu dominio.
+
+2. **Comprobar DNS**
+   - Dominio raíz: registro **A** con valor **`216.24.57.1`** (Host `@` o raíz).
+   - www: registro **CNAME** con valor **`altum-capital.onrender.com`** (Host `www`).
+   - Sin registros **AAAA** (IPv6) para `@` o `www` que apunten a este sitio.
+
+3. **Probar en ventana privada**  
+   Abre **https://altum-capital.com.mx** en una ventana de incógnito. Si sale aviso de “conexión no segura” o “certificado inválido”, el certificado del dominio aún no está listo o el DNS no apunta a Render.
+
+4. **Propagación DNS**  
+   Los cambios DNS pueden tardar desde minutos hasta 24–48 h. Puedes comprobar a qué IP resuelve tu dominio: en terminal `dig altum-capital.com.mx` o usa [whatsmydns.net](https://www.whatsmydns.net).
+
+5. **Caché del navegador**  
+   Borra caché solo para **altum-capital.com.mx** o prueba en otro navegador/dispositivo.
+
+### Que /login, /resultados, etc. funcionen al escribir la URL directa (altum-capital.com.mx/login)
+
+Si al poner **altum-capital.com.mx/login** (o /resultados, /propiedad/123) sale **404** o página en blanco, pero desde la portada navegando sí funciona, es porque el servidor no está sirviendo `index.html` para esas rutas (la app es una SPA y React Router solo puede actuar cuando ya cargó el HTML).
+
+En Render hay que añadir una **regla de reescritura (Rewrite)**:
+
+1. En el **Dashboard** de Render, entra a tu **Static Site** (Altum-Capital).
+2. Ve a **Settings** → pestaña **Redirects/Rewrites**.
+3. Pulsa **Add Rule** (o **Add Redirect/Rewrite**).
+4. Configura:
+   - **Source Path:** `/*` (con la barra y el asterisco; significa “cualquier ruta”).
+   - **Destination Path:** `/index.html`
+   - **Action:** **Rewrite** (no Redirect).
+5. Guarda.
+
+Con esto, al entrar a **altum-capital.com.mx/login** (o cualquier ruta), Render sirve el contenido de `index.html` sin cambiar la URL, React carga y el router muestra la página de login (o la que corresponda). Las rutas que sí son archivos reales (por ejemplo `/assets/...`) siguen sirviéndose normalmente.
+
 ---
 
 ## 1. Tener el servicio en Render

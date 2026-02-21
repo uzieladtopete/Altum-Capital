@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useContactModal } from '../../context/ContactModalContext'
 
 const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
 const SCROLL_DURATION_MS = 1600 // más lento y suave al clic en logo
@@ -30,6 +31,7 @@ export default function Navbar() {
   const [atTop, setAtTop] = useState(true)
   const location = useLocation()
   const { user, role, signOut } = useAuth()
+  const { openContactModal } = useContactModal()
   const isAdmin = user && role === 'admin'
 
   useEffect(() => {
@@ -85,6 +87,14 @@ export default function Navbar() {
                   >
                     {label}
                   </Link>
+                ) : label === 'Contacto' ? (
+                  <button
+                    type="button"
+                    onClick={openContactModal}
+                    className="text-sm font-medium tracking-wide text-gray-600 hover:text-accent transition-colors"
+                  >
+                    {label}
+                  </button>
                 ) : (
                   <a
                     href={path}
@@ -164,6 +174,17 @@ export default function Navbar() {
                     >
                       {label}
                     </Link>
+                  ) : label === 'Contacto' ? (
+                    <button
+                      type="button"
+                      className="block w-full text-left py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                      onClick={() => {
+                        setMobileOpen(false)
+                        openContactModal()
+                      }}
+                    >
+                      {label}
+                    </button>
                   ) : (
                     <a
                       href={path}

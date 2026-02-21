@@ -1,6 +1,7 @@
 /**
  * Lista fija de amenidades por categoría para Crear/Editar propiedad.
  * El admin marca con check las que aplican; se guardan como arrays en la BD.
+ * La categoría "otro" no tiene lista fija: el usuario ingresa texto libre (una por línea).
  */
 export const AMENIDADES_OPCIONES = {
   general: [

@@ -26,6 +26,7 @@ const ESTADOS = [
 const initialForm = {
   titulo: '',
   ciudad: 'Guadalajara',
+  zona: '',
   tipo: 'Residencial',
   precio: '',
   m2: '',
@@ -44,6 +45,9 @@ const initialForm = {
   amenidadesGeneral: [], // array de labels seleccionados
   amenidadesPoliticas: [],
   amenidadesRecreacion: [],
+  amenidadesOtroGeneral: [],
+  amenidadesOtroPoliticas: [],
+  amenidadesOtroRecreacion: [],
 }
 
 const DEBOUNCE_MS = 800
@@ -241,9 +245,9 @@ export default function CrearPropiedadPage() {
       ? form.galeria.split('\n').map((u) => u.trim()).filter(Boolean)
       : []
     const amenidades = {
-      general: Array.isArray(form.amenidadesGeneral) ? form.amenidadesGeneral : [],
-      politicas: Array.isArray(form.amenidadesPoliticas) ? form.amenidadesPoliticas : [],
-      recreacion: Array.isArray(form.amenidadesRecreacion) ? form.amenidadesRecreacion : [],
+      general: [...(form.amenidadesGeneral || []), ...(form.amenidadesOtroGeneral || [])],
+      politicas: [...(form.amenidadesPoliticas || []), ...(form.amenidadesOtroPoliticas || [])],
+      recreacion: [...(form.amenidadesRecreacion || []), ...(form.amenidadesOtroRecreacion || [])],
     }
 
     try {
@@ -251,7 +255,7 @@ export default function CrearPropiedadPage() {
       await addPropiedad({
         titulo,
         ciudad: form.ciudad,
-        zona: '',
+        zona: form.zona?.trim() || null,
         tipo: form.tipo,
         precio,
         m2,
@@ -273,7 +277,7 @@ export default function CrearPropiedadPage() {
       resetForm()
     } catch (err) {
       console.error(err)
-      addToast({ type: 'error', message: err?.message || 'No se pudo crear. Revisa la consola y que Supabase tenga las columnas necesarias.' })
+      addToast({ type: 'error', message: err?.message || 'No se pudo crear. Revisa la consola y que la base de datos tenga las columnas necesarias.' })
     } finally {
       setIsSubmitting(false)
     }
@@ -318,6 +322,19 @@ export default function CrearPropiedadPage() {
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label htmlFor="zona" className="block text-sm font-medium text-gray-700 mb-1">
+            Zona
+          </label>
+          <input
+            id="zona"
+            type="text"
+            value={form.zona}
+            onChange={(e) => handleChange('zona', e.target.value)}
+            placeholder="Ej. Chapalita, Andares, Providencia, Centro"
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+          />
         </div>
         <div>
           <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
@@ -555,6 +572,13 @@ export default function CrearPropiedadPage() {
                   )
                 })}
               </div>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
+              <textarea
+                value={(form.amenidadesOtroGeneral || []).join('\n')}
+                onChange={(e) => handleChange('amenidadesOtroGeneral', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
+                placeholder="Ej: Estacionamiento visitas"
+              />
             </div>
             {/* Políticas */}
             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
@@ -603,6 +627,13 @@ export default function CrearPropiedadPage() {
                   )
                 })}
               </div>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
+              <textarea
+                value={(form.amenidadesOtroPoliticas || []).join('\n')}
+                onChange={(e) => handleChange('amenidadesOtroPoliticas', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
+                placeholder="Ej: Renta flexible"
+              />
             </div>
             {/* Recreación */}
             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
@@ -651,6 +682,13 @@ export default function CrearPropiedadPage() {
                   )
                 })}
               </div>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
+              <textarea
+                value={(form.amenidadesOtroRecreacion || []).join('\n')}
+                onChange={(e) => handleChange('amenidadesOtroRecreacion', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
+                placeholder="Ej: Roof garden"
+              />
             </div>
           </div>
         </div>

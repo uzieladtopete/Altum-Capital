@@ -1,96 +1,149 @@
 import { supabase } from '../lib/supabase'
 
-// Nombre de la tabla: debe coincidir con Supabase (tu captura muestra "Propiedades" con P mayúscula)
 const TABLE = 'Propiedades'
+const DETAILS_TABLE = 'detalles_prop'
 
-// Mientras no tengas estas columnas en Supabase, no las enviamos.
-// Cuando las agregues (ver SUPABASE-CAMPOS-DETALLE-PROP.md), cambia a false.
-const SKIP_COLUMNAS_NUEVAS = true
+// Campos de detalle que viven en la tabla detalles_prop (vinculada por propiedad_id)
+const DETAIL_FIELDS = ['recamaras', 'banos', 'estacionamientos', 'anio_construccion', 'piso', 'amenidades', 'titulo']
 
 const mapToDB = (prop) => {
   if (prop == null) return prop
-  // Convertir lng (código) -> long (base de datos)
   const { lng, ...rest } = prop
   const out = lng !== undefined ? { ...rest, long: lng } : rest
-  
-  if (!SKIP_COLUMNAS_NUEVAS) return out
-  // Omitir campos que aún no existen en la tabla de Supabase
-  const {
-    amenidades,
-    galeria,
-    recamaras,
-    banos,
-    estacionamientos,
-    anio_construccion,
-    piso,
-    ...restFiltered
-  } = out
+  // En Propiedades van todos menos los que viven en detalles_prop
+  const { amenidades, recamaras, banos, estacionamientos, anio_construccion, piso, ...restFiltered } = out
   return { ...restFiltered }
 }
-const mapFromDB = (prop) => {
-  if (prop == null) return prop
-  // Convertir long (base de datos) -> lng (código)
-  const { long, ...rest } = prop
-  return long !== undefined ? { ...rest, lng: long } : rest
+
+/** Extrae solo los campos que se guardan en detalles_prop */
+function toDetallesRow(propiedadId, prop) {
+  if (prop == null) return null
+  const amenidades = prop.amenidades && typeof prop.amenidades === 'object'
+    ? {
+        general: Array.isArray(prop.amenidades.general) ? prop.amenidades.general : [],
+        politicas: Array.isArray(prop.amenidades.politicas) ? prop.amenidades.politicas : [],
+        recreacion: Array.isArray(prop.amenidades.recreacion) ? prop.amenidades.recreacion : [],
+      }
+    : { general: [], politicas: [], recreacion: [] }
+  return {
+    propiedad_id: propiedadId,
+    titulo: prop.titulo ?? null,
+    recamaras: prop.recamaras ?? null,
+    banos: prop.banos ?? null,
+    estacionamientos: prop.estacionamientos ?? null,
+    anio_construccion: prop.anio_construccion ?? null,
+    piso: prop.piso ?? null,
+    amenidades,
+    updated_at: new Date().toISOString(),
+  }
+}
+
+/** Normaliza amenidades (puede venir como objeto, string JSON o null) */
+function normalizeAmenidades(val) {
+  if (val == null) return { general: [], politicas: [], recreacion: [] }
+  if (typeof val === 'string') {
+    try { val = JSON.parse(val) } catch (_) { return { general: [], politicas: [], recreacion: [] } }
+  }
+  if (typeof val !== 'object') return { general: [], politicas: [], recreacion: [] }
+  return {
+    general: Array.isArray(val.general) ? val.general : [],
+    politicas: Array.isArray(val.politicas) ? val.politicas : [],
+    recreacion: Array.isArray(val.recreacion) ? val.recreacion : [],
+  }
+}
+
+/** Une una fila de Propiedades con su detalles_prop en un solo objeto para la app */
+function mapFromDB(row) {
+  if (row == null) return row
+  const { long, detalles_prop, ...rest } = row
+  const out = long !== undefined ? { ...rest, lng: long } : rest
+  const det = Array.isArray(detalles_prop) ? detalles_prop[0] : detalles_prop
+  if (det && typeof det === 'object') {
+    out.recamaras = det.recamaras ?? undefined
+    out.banos = det.banos ?? undefined
+    out.estacionamientos = det.estacionamientos ?? undefined
+    out.anio_construccion = det.anio_construccion ?? undefined
+    out.piso = det.piso ?? undefined
+    out.amenidades = normalizeAmenidades(det.amenidades)
+    if (det.titulo != null) out.titulo = row.titulo ?? det.titulo
+  }
+  return out
+}
+
+const selectWithDetails = '*, detalles_prop(*)'
+
+async function getPropiedadesWithDetails(filters) {
+  let query = supabase.from(TABLE).select(selectWithDetails)
+  if (filters.ciudad) query = query.eq('ciudad', filters.ciudad)
+  if (filters.tipo) query = query.eq('tipo', filters.tipo)
+  if (filters.minPrecio) query = query.gte('precio', Number(filters.minPrecio))
+  if (filters.maxPrecio) query = query.lte('precio', Number(filters.maxPrecio))
+  if (filters.minM2) query = query.gte('m2', Number(filters.minM2))
+  if (filters.maxM2) query = query.lte('m2', Number(filters.maxM2))
+  const { data, error } = await query.order('created_at', { ascending: false })
+  return { data, error }
 }
 
 export async function getPropiedades(filters = {}) {
-  if (!supabase) throw new Error('Supabase no configurado') // PropiedadesContext usará datos locales
-  let query = supabase.from(TABLE).select('*')
-
-  // Aplicar filtros
-  if (filters.ciudad) {
-    query = query.eq('ciudad', filters.ciudad)
-  }
-  if (filters.tipo) {
-    query = query.eq('tipo', filters.tipo)
-  }
-  if (filters.minPrecio) {
-    query = query.gte('precio', Number(filters.minPrecio))
-  }
-  if (filters.maxPrecio) {
-    query = query.lte('precio', Number(filters.maxPrecio))
-  }
-  if (filters.minM2) {
-    query = query.gte('m2', Number(filters.minM2))
-  }
-  if (filters.maxM2) {
-    query = query.lte('m2', Number(filters.maxM2))
-  }
-
-  const { data, error } = await query.order('created_at', { ascending: false })
-
+  if (!supabase) throw new Error('Supabase no configurado')
+  let { data, error } = await getPropiedadesWithDetails(filters)
   if (error) {
-    console.error('Error fetching propiedades:', error)
-    return []
+    let q = supabase.from(TABLE).select('*')
+    if (filters.ciudad) q = q.eq('ciudad', filters.ciudad)
+    if (filters.tipo) q = q.eq('tipo', filters.tipo)
+    if (filters.minPrecio) q = q.gte('precio', Number(filters.minPrecio))
+    if (filters.maxPrecio) q = q.lte('precio', Number(filters.maxPrecio))
+    if (filters.minM2) q = q.gte('m2', Number(filters.minM2))
+    if (filters.maxM2) q = q.lte('m2', Number(filters.maxM2))
+    const res = await q.order('created_at', { ascending: false })
+    if (res.error) {
+      console.error('Error fetching propiedades:', res.error)
+      return []
+    }
+    return (res.data || []).map(mapFromDB)
   }
-
-  // Convertir long -> lng para el código
   return (data || []).map(mapFromDB)
 }
 
 export async function getPropiedadById(id) {
   if (!supabase) return null
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from(TABLE)
-    .select('*')
+    .select(selectWithDetails)
     .eq('id', id)
     .single()
-
   if (error) {
-    console.error('Error fetching propiedad:', error)
-    return null
+    const res = await supabase.from(TABLE).select('*').eq('id', id).single()
+    if (res.error) {
+      console.error('Error fetching propiedad:', res.error)
+      return null
+    }
+    data = res.data
+    if (data) {
+      const { data: detData } = await supabase
+        .from(DETAILS_TABLE)
+        .select('*')
+        .eq('propiedad_id', id)
+        .maybeSingle()
+      data = { ...data, detalles_prop: detData ? [detData] : [] }
+    }
   }
-
   return data ? mapFromDB(data) : null
 }
 
 export async function createPropiedad(propiedad) {
   if (!supabase) throw new Error('Supabase no configurado')
   const dbProp = mapToDB(propiedad)
+  const now = new Date().toISOString()
+  const row = {
+    ...dbProp,
+    created_at: dbProp.created_at || now,
+    updated_at: dbProp.updated_at || now,
+  }
+
   const { data, error } = await supabase
     .from(TABLE)
-    .insert([dbProp])
+    .insert([row])
     .select()
     .single()
 
@@ -99,34 +152,67 @@ export async function createPropiedad(propiedad) {
     throw error
   }
 
-  return data ? mapFromDB(data) : null
+  const id = data?.id
+  if (id) {
+    const detallesRow = toDetallesRow(id, propiedad)
+    if (detallesRow) {
+      const { error: errDet } = await supabase.from(DETAILS_TABLE).insert([detallesRow])
+      if (errDet) console.error('Error creating detalles_prop:', errDet)
+    }
+  }
+
+  const full = id ? await getPropiedadById(id) : null
+  return full ?? (data ? mapFromDB(data) : null)
 }
 
 export async function updatePropiedad(id, updates) {
   if (!supabase) throw new Error('Supabase no configurado')
-  const dbUpdates = mapToDB(updates)
-  const { data, error } = await supabase
+  let dbUpdates = mapToDB(updates)
+  const hasDetailFields = DETAIL_FIELDS.some((f) => updates[f] !== undefined)
+
+  let { data, error } = await supabase
     .from(TABLE)
     .update({ ...dbUpdates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()
 
+  if (error && (error.message || '').toLowerCase().includes('galeria')) {
+    const { galeria, ...safe } = dbUpdates
+    const res = await supabase
+      .from(TABLE)
+      .update({ ...safe, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    if (!res.error) {
+      data = res.data
+      error = null
+    }
+  }
+
   if (error) {
     console.error('Error updating propiedad:', error)
     throw error
   }
 
-  return data ? mapFromDB(data) : null
+  if (hasDetailFields) {
+    const detallesRow = toDetallesRow(id, updates)
+    if (detallesRow) {
+      const { error: errUpsert } = await supabase
+        .from(DETAILS_TABLE)
+        .upsert([detallesRow], { onConflict: 'propiedad_id' })
+      if (errUpsert) console.error('Error upserting detalles_prop:', errUpsert)
+    }
+  }
+
+  const withDetails = await getPropiedadById(id)
+  return withDetails ?? (data ? mapFromDB(data) : null)
 }
 
 export async function deletePropiedad(id) {
   if (!supabase) throw new Error('Supabase no configurado')
-  const { error } = await supabase
-    .from(TABLE)
-    .delete()
-    .eq('id', id)
-
+  const { error } = await supabase.from(TABLE).delete().eq('id', id)
   if (error) {
     console.error('Error deleting propiedad:', error)
     throw error

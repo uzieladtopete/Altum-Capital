@@ -33,6 +33,35 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
+/* Animaciones al hacer scroll (AnimateOnScroll) */
+.scroll-animate {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scroll-animate.scroll-animate-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.scroll-animate.scroll-animate-visible.animate-scroll-in-down {
+  transform: translateY(0);
+}
+.scroll-animate.animate-scroll-in-down {
+  transform: translateY(-28px);
+}
+.scroll-animate.scroll-animate-visible.animate-scroll-in-left {
+  transform: translateX(0);
+}
+.scroll-animate.animate-scroll-in-left {
+  transform: translateX(32px);
+}
+.scroll-animate.scroll-animate-visible.animate-scroll-in-right {
+  transform: translateX(0);
+}
+.scroll-animate.animate-scroll-in-right {
+  transform: translateX(-32px);
+}
+
 /* Map: marcador minimalista */
 .map-marker-custom {
   background: none !important;
