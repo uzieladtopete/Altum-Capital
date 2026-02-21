@@ -101,7 +101,8 @@ export default function Filtro() {
             <select
               value={filters.ciudad}
               onChange={(e) => handleChange('ciudad', e.target.value)}
-              className="w-full min-w-0 px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
+              className="w-full min-w-0 pl-4 pr-10 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition appearance-none bg-[length:1rem_1rem] bg-[right_0.75rem_center] bg-no-repeat cursor-pointer"
+              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")" }}
               aria-label="Ciudad"
             >
               {CIUDADES.map(({ value, label }) => (
@@ -111,7 +112,8 @@ export default function Filtro() {
             <select
               value={filters.tipo}
               onChange={(e) => handleChange('tipo', e.target.value)}
-              className="w-full min-w-[11rem] px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition"
+              className="w-full min-w-[11rem] pl-4 pr-10 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition appearance-none bg-[length:1rem_1rem] bg-[right_0.75rem_center] bg-no-repeat cursor-pointer"
+              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")" }}
               aria-label="Tipo de propiedad"
             >
               {TIPOS.map(({ value, label }) => (

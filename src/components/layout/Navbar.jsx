@@ -3,6 +3,20 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
+const SCROLL_DURATION_MS = 1600 // más lento y suave al clic en logo
+
+function smoothScrollToTop(durationMs = SCROLL_DURATION_MS) {
+  const start = window.scrollY
+  const startTime = performance.now()
+  function step(now) {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / durationMs, 1)
+    const ease = 1 - (1 - progress) ** 2
+    window.scrollTo(0, start * (1 - ease))
+    if (progress < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
 
 const navItems = [
   { label: 'Inicio', path: '/' },
@@ -34,9 +48,13 @@ export default function Navbar() {
             to="/"
             className="relative inline-flex items-center justify-center h-full min-w-[160px] md:min-w-[200px] overflow-hidden z-10"
             aria-label="Altum Capital - Inicio"
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-              if (location.pathname !== '/') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)
+            onClick={(e) => {
+              if (location.pathname === '/') {
+                e.preventDefault()
+                smoothScrollToTop()
+              } else {
+                setTimeout(() => smoothScrollToTop(), 150)
+              }
             }}
           >
             <img
