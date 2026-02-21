@@ -1,3 +1,6 @@
+import { useNavigate } from 'react-router-dom'
+import ImagenPropiedad from '../ImagenPropiedad'
+
 function formatPrice(value) {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
@@ -10,16 +13,35 @@ function formatPrice(value) {
 const availabilityStyles = {
   Disponible: 'bg-emerald-50 text-emerald-800 border-emerald-200',
   'En construcción': 'bg-amber-50 text-amber-800 border-amber-200',
+  'En preventa': 'bg-amber-50 text-amber-800 border-amber-200',
+  Vendido: 'bg-gray-100 text-gray-700 border-gray-200',
   Finalizado: 'bg-gray-100 text-gray-700 border-gray-200',
 }
 
 export default function ProjectCard({ project, compact = false }) {
-  const { name, location, price, availability, image } = project
+  const navigate = useNavigate()
+  
+  // Soporta tanto la estructura antigua (mockProjects) como la nueva (propiedades)
+  const name = project.name || project.titulo
+  const location = project.location || (project.zona ? `${project.ciudad} · ${project.zona}` : project.ciudad)
+  const price = project.price || project.precio
+  const availability = project.availability || project.estado
+  const image = project.image || project.imagen
+  const id = project.id
+
+  const handleClick = () => {
+    if (id) {
+      navigate(`/propiedad/${id}`, { state: { from: '/' } })
+    }
+  }
 
   return (
-    <article className="group bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <article 
+      onClick={handleClick}
+      className="group bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+    >
       <div className={`relative ${compact ? 'aspect-[4/3]' : 'aspect-[3/2]'}`}>
-        <img
+        <ImagenPropiedad
           src={image}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"

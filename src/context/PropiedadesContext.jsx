@@ -1,34 +1,76 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { propiedades as initialPropiedades } from '../data/propiedades.js'
-import { applyFilters } from '../services/propiedades.js'
+import {
+  getPropiedades,
+  createPropiedad,
+  updatePropiedad as updatePropiedadSupabase,
+  deletePropiedad,
+} from '../services/propiedadesSupabase'
 
 const PropiedadesContext = createContext(null)
 
 export function PropiedadesProvider({ children }) {
-  const [list, setList] = useState(() => [...initialPropiedades])
+  const [list, setList] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const addPropiedad = useCallback((prop) => {
-    const id = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `prop-${Date.now()}`
-    setList((prev) => [...prev, { ...prop, id }])
+
+  const loadPropiedades = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getPropiedades()
+      setList(data || [])
+    } catch (error) {
+      console.error('Error loading propiedades:', error)
+      // Solo usar datos locales en la primera carga; no sobrescribir lista ya cargada desde Supabase
+      setList((prev) => (prev.length === 0 ? [...initialPropiedades] : prev))
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  const removePropiedad = useCallback((id) => {
-    setList((prev) => prev.filter((p) => p.id !== id))
-  }, [])
+  useEffect(() => {
+    loadPropiedades()
+  }, [loadPropiedades])
 
-  const updatePropiedad = useCallback((id, data) => {
-    setList((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, ...data, id: p.id } : p
-      )
-    )
-  }, [])
+  const addPropiedad = useCallback(async (prop) => {
+    const newProp = await createPropiedad(prop)
+    await loadPropiedades()
+    return newProp
+  }, [loadPropiedades])
 
-  const getFiltered = useCallback((filters) => applyFilters(list, filters), [list])
+  const removePropiedad = useCallback(async (id) => {
+    await deletePropiedad(id)
+    await loadPropiedades()
+  }, [loadPropiedades])
 
-  const value = { list, addPropiedad, removePropiedad, updatePropiedad, getFiltered }
+  const updatePropiedad = useCallback(async (id, data) => {
+    const updated = await updatePropiedadSupabase(id, data)
+    await loadPropiedades()
+    return updated
+  }, [loadPropiedades])
+
+  const getFiltered = useCallback(
+    async (filters) => {
+      try {
+        return await getPropiedades(filters)
+      } catch (error) {
+        console.error('Error filtering propiedades:', error)
+        return []
+      }
+      },
+    []
+  )
+
+  const value = {
+    list,
+    loading,
+    addPropiedad,
+    removePropiedad,
+    updatePropiedad,
+    getFiltered,
+    refresh: loadPropiedades,
+  }
+
   return (
     <PropiedadesContext.Provider value={value}>
       {children}

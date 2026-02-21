@@ -35,6 +35,10 @@ function filterPropiedades(list, params) {
 }
 
 export default defineConfig({
+  server: {
+    port: 5173,
+    strictPort: true, // no usar otro puerto si 5173 está ocupado
+  },
   plugins: [
     react(),
     {

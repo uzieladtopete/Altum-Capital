@@ -1,10 +1,21 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import ImagenPropiedad from './ImagenPropiedad'
 
 const CENTER_GDJ = [20.6597, -103.3496]
 const DEFAULT_ZOOM = 12
+const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+})
 
 function formatPrecio(value) {
   return new Intl.NumberFormat('es-MX', {
@@ -15,163 +26,194 @@ function formatPrecio(value) {
   }).format(value)
 }
 
-// Tiles claros y minimalistas (CartoDB Positron)
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-
-// Marcador minimalista: círculo oscuro
-const markerIcon = new L.DivIcon({
-  className: 'map-marker-custom',
-  html: '<span class="map-marker-dot"></span>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-})
-
 function hasValidCoords(prop) {
   const lat = Number(prop.lat)
   const lng = Number(prop.lng)
   return !Number.isNaN(lat) && !Number.isNaN(lng)
 }
 
-function FitBounds({ propiedadesConCoords }) {
+const MEXICO_BOUNDS = {
+  minLat: 14.5,
+  maxLat: 32.7,
+  minLng: -118.4,
+  maxLng: -86.8,
+}
+
+function isInMexico(prop) {
+  const lat = Number(prop.lat)
+  const lng = Number(prop.lng)
+  return (
+    lat >= MEXICO_BOUNDS.minLat &&
+    lat <= MEXICO_BOUNDS.maxLat &&
+    lng >= MEXICO_BOUNDS.minLng &&
+    lng <= MEXICO_BOUNDS.maxLng
+  )
+}
+
+function MapViewUpdater({ center, zoom }) {
   const map = useMap()
   useEffect(() => {
-    if (propiedadesConCoords.length === 0) {
-      map.setView(CENTER_GDJ, DEFAULT_ZOOM)
-      return
+    if (center && center.length === 2) {
+      map.setView(center, zoom ?? map.getZoom())
     }
-    if (propiedadesConCoords.length === 1) {
-      map.setView([propiedadesConCoords[0].lat, propiedadesConCoords[0].lng], 15)
-      return
-    }
-    const bounds = L.latLngBounds(propiedadesConCoords.map((p) => [p.lat, p.lng]))
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 })
-    }
-  }, [map, propiedadesConCoords])
+  }, [center, zoom, map])
   return null
 }
 
-function FlyToSelected({ selectedId, propiedadesConCoords, markerRefs }) {
-  const map = useMap()
+export default function Mapa({ propiedades = [], selectedId = null, onSelect = null }) {
+  const [viewCenter, setViewCenter] = useState(CENTER_GDJ)
+  const [viewZoom, setViewZoom] = useState(DEFAULT_ZOOM)
+  const [popupInfo, setPopupInfo] = useState(null)
+  const markerRefs = useRef({})
+
+  const propiedadesArray = Array.isArray(propiedades) ? propiedades : []
+  const propiedadesConCoords = propiedadesArray.filter(hasValidCoords)
+  const propiedadesValidas = propiedadesConCoords.filter(isInMexico)
+  const isEmpty = propiedadesArray.length === 0
+
   useEffect(() => {
-    if (!selectedId || !propiedadesConCoords.length) return
-    const prop = propiedadesConCoords.find((p) => p.id === selectedId)
-    if (!prop) return
-    
-    // Cerrar cualquier popup abierto primero
-    map.closePopup()
-    
-    map.flyTo([prop.lat, prop.lng], 15, { duration: 0.5 })
-    
-    // Intentar abrir el popup después de que termine la animación de vuelo
-    const openPopup = () => {
-      const marker = markerRefs.current?.[selectedId]
-      if (marker) {
-        // Intentar diferentes formas de acceder al marker según la versión de react-leaflet
-        let leafletMarker = null
-        if (marker.leafletElement) {
-          leafletMarker = marker.leafletElement
-        } else if (marker.instance) {
-          leafletMarker = marker.instance
-        } else if (marker.openPopup) {
-          leafletMarker = marker
-        } else if (marker._leaflet_id) {
-          // Es una instancia directa de Leaflet
-          leafletMarker = marker
-        }
-        
-        if (leafletMarker && typeof leafletMarker.openPopup === 'function') {
-          try {
-            leafletMarker.openPopup()
-          } catch (err) {
-            console.warn('No se pudo abrir el popup automáticamente:', err)
-          }
-        }
+    if (propiedadesValidas.length === 0) {
+      setViewCenter(CENTER_GDJ)
+      setViewZoom(DEFAULT_ZOOM)
+      return
+    }
+    if (propiedadesValidas.length === 1) {
+      setViewCenter([Number(propiedadesValidas[0].lat), Number(propiedadesValidas[0].lng)])
+      setViewZoom(13)
+      return
+    }
+    const bounds = propiedadesValidas.reduce(
+      (acc, prop) => {
+        const lat = Number(prop.lat)
+        const lng = Number(prop.lng)
+        if (!acc.minLat || lat < acc.minLat) acc.minLat = lat
+        if (!acc.maxLat || lat > acc.maxLat) acc.maxLat = lat
+        if (!acc.minLng || lng < acc.minLng) acc.minLng = lng
+        if (!acc.maxLng || lng > acc.maxLng) acc.maxLng = lng
+        return acc
+      },
+      { minLat: null, maxLat: null, minLng: null, maxLng: null }
+    )
+    if (bounds.minLat != null) {
+      const centerLat = (bounds.minLat + bounds.maxLat) / 2
+      const centerLng = (bounds.minLng + bounds.maxLng) / 2
+      const latDiff = bounds.maxLat - bounds.minLat
+      const lngDiff = bounds.maxLng - bounds.minLng
+      const maxDiff = Math.max(latDiff, lngDiff)
+      let zoom = 12
+      if (maxDiff < 0.01) zoom = 14
+      else if (maxDiff < 0.05) zoom = 13
+      else if (maxDiff < 0.1) zoom = 12
+      else zoom = 11
+      setViewCenter([centerLat, centerLng])
+      setViewZoom(zoom)
+    }
+  }, [propiedadesValidas.length])
+
+  // Clave estable para no re-ejecutar en cada render (propiedadesValidas es nuevo cada vez y traba el mapa)
+  const propIdsKey = propiedadesValidas.map((p) => p.id).sort().join(',')
+  useEffect(() => {
+    if (!selectedId || !propiedadesValidas.length) {
+      setPopupInfo(null)
+      return
+    }
+    const prop = propiedadesValidas.find((p) => p.id === selectedId)
+    if (prop) {
+      setViewCenter([Number(prop.lat), Number(prop.lng)])
+      setViewZoom(14)
+      setPopupInfo(prop)
+      const ref = markerRefs.current[prop.id]
+      if (ref?.leafletElement) {
+        setTimeout(() => ref.leafletElement.openPopup(), 100)
       }
     }
-    
-    // Esperar a que termine la animación de vuelo (500ms) + delay para asegurar que el marker esté listo
-    const timeout1 = setTimeout(openPopup, 800)
-    // También intentar después de un tiempo adicional por si acaso
-    const timeout2 = setTimeout(openPopup, 1200)
-    
-    return () => {
-      clearTimeout(timeout1)
-      clearTimeout(timeout2)
-    }
-  }, [map, selectedId, propiedadesConCoords, markerRefs])
-  return null
-}
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- propIdsKey evita re-runs por referencia de array
+  }, [selectedId, propIdsKey])
 
-export default function Mapa({ propiedades = [], selectedId = null }) {
-  const markerRefs = useRef({})
-  const propiedadesConCoords = propiedades.filter(hasValidCoords)
-  const isEmpty = propiedades.length === 0
+  const handleMarkerClick = useCallback(
+    (prop) => {
+      setPopupInfo(prop)
+      onSelect?.(prop.id)
+    },
+    [onSelect]
+  )
+
+  const markerIcon = (selected) =>
+    L.divIcon({
+      className: 'custom-marker-mapa',
+      html: `<div style="
+        width: 24px; height: 24px; background: #111; border: 2px solid white;
+        border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        transform: scale(${selected ? 1.1 : 1});
+      "></div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 24],
+    })
 
   return (
     <div className="mapa-wrapper w-full h-full min-h-[300px] lg:min-h-[500px] rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
       {isEmpty ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50/95 z-10 backdrop-blur-[2px]">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50/95 z-[1000] backdrop-blur-[2px]">
           <p className="text-gray-500 font-serif text-lg text-center px-8 max-w-sm">
             No se encontraron propiedades con estos filtros.
           </p>
         </div>
       ) : null}
       <MapContainer
-        center={CENTER_GDJ}
-        zoom={DEFAULT_ZOOM}
-        className="w-full h-full min-h-[300px] lg:min-h-[500px] mapa-container"
-        style={{ opacity: isEmpty ? 0.35 : 1 }}
-        scrollWheelZoom
+        center={viewCenter}
+        zoom={viewZoom}
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom={true}
+        doubleClickZoom={true}
       >
-        <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
-        <FitBounds propiedadesConCoords={propiedadesConCoords} />
-        {selectedId && propiedadesConCoords.length > 0 && (
-          <FlyToSelected
-            selectedId={selectedId}
-            propiedadesConCoords={propiedadesConCoords}
-            markerRefs={markerRefs}
-          />
-        )}
-        {propiedadesConCoords.map((prop) => (
+        <TileLayer attribution={TILE_ATTR} url={TILE_URL} />
+        <MapViewUpdater center={viewCenter} zoom={viewZoom} />
+        {propiedadesValidas.map((prop) => (
           <Marker
             key={prop.id}
-            position={[prop.lat, prop.lng]}
-            icon={markerIcon}
-            ref={(ref) => {
-              if (ref) {
-                // Guardar la referencia del marker - intentar diferentes formas según react-leaflet v4
-                const markerInstance = ref.leafletElement || ref.instance || ref
-                if (markerInstance) {
-                  markerRefs.current[prop.id] = markerInstance
-                }
-              } else {
-                delete markerRefs.current[prop.id]
-              }
+            ref={(el) => {
+              if (el) markerRefs.current[prop.id] = el
             }}
+            position={[Number(prop.lat), Number(prop.lng)]}
+            icon={markerIcon(popupInfo?.id === prop.id)}
             eventHandlers={{
-              add: (e) => {
-                // Asegurar que el ref se guarde cuando el marker se añade al mapa
-                // e.target es la instancia de Leaflet del marker
-                markerRefs.current[prop.id] = e.target
-              },
+              click: () => handleMarkerClick(prop),
             }}
           >
-            <Popup className="mapa-popup" minWidth={240} maxWidth={280}>
-              <div className="mapa-popup-content">
+            <Popup
+              className="mapa-popup-circular"
+              onClose={() => {
+                setPopupInfo(null)
+                onSelect?.(null)
+              }}
+              closeButton={true}
+            >
+              <div className="mapa-popup-content w-[250px]" onClick={(e) => e.stopPropagation()}>
                 <ImagenPropiedad
                   src={prop.imagen}
                   alt={prop.titulo}
-                  className="mapa-popup-img"
+                  className="mapa-popup-img w-full h-20 object-cover rounded-t-lg"
                 />
-                <h3 className="mapa-popup-title">{prop.titulo}</h3>
-                <p className="mapa-popup-precio">{formatPrecio(prop.precio)}</p>
-                <p className="mapa-popup-m2">{prop.m2} m²</p>
-                <span className="mapa-popup-estado">{prop.estado}</span>
-                <a href="#" className="mapa-popup-btn">
-                  Ver propiedad
-                </a>
+                <div className="p-1.5">
+                  <h3 className="mapa-popup-title font-serif font-semibold text-gray-900 text-[9px] mb-0.5 leading-tight line-clamp-2">
+                    {prop.titulo}
+                  </h3>
+                  <p className="mapa-popup-precio font-semibold text-gray-900 text-[9px] mb-0.5">
+                    {formatPrecio(prop.precio)}
+                  </p>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="mapa-popup-m2 text-[8px] text-gray-600">{prop.m2} m²</p>
+                    <span className="mapa-popup-estado inline-block px-0.5 py-0 text-[7px] font-medium rounded border bg-gray-50 text-gray-700 border-gray-200">
+                      {prop.estado}
+                    </span>
+                  </div>
+                  <Link
+                    to={`/propiedad/${prop.id}`}
+                    className="mapa-popup-btn block w-full text-center px-1 py-0.5 bg-gray-900 text-white text-[7px] font-medium rounded hover:bg-gray-800 transition-colors"
+                  >
+                    Ver propiedad
+                  </Link>
+                </div>
               </div>
             </Popup>
           </Marker>

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+
+const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
 
 const navItems = [
   { label: 'Inicio', path: '/' },
@@ -11,23 +13,49 @@ const navItems = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [atTop, setAtTop] = useState(true)
   const location = useLocation()
-  const { role, toggleRole } = useAuth()
+  const { user, role, signOut } = useAuth()
+  const isAdmin = user && role === 'admin'
+
+  useEffect(() => {
+    const onScroll = () => setAtTop(window.scrollY < SCROLL_THRESHOLD)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
+        <div className="flex items-center justify-between h-16 md:h-20 relative">
+          {/* Arriba del todo: solo logo. Al bajar: solo texto ALTUM CAPITAL. Ancho suficiente para que las letras no se salgan. */}
           <Link
             to="/"
-            className="font-serif text-xl md:text-2xl font-semibold text-gray-900 tracking-[0.2em] md:tracking-[0.25em] uppercase hover:text-accent transition-colors"
+            className="relative inline-flex items-center justify-center h-full min-w-[160px] md:min-w-[200px] overflow-hidden z-10"
+            aria-label="Altum Capital - Inicio"
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+              if (location.pathname !== '/') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)
+            }}
           >
-            Altum Capital
+            <img
+              src="/logo_altum.png?v=nav3"
+              alt=""
+              className={`max-h-9 w-auto md:max-h-11 object-contain object-center transition-opacity duration-300 invert hue-rotate-[200deg] mix-blend-multiply ${atTop ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}
+              onError={(e) => {
+                e.target.style.display = 'none'
+              }}
+            />
+            <span
+              className={`font-serif text-sm md:text-base font-semibold text-gray-900 tracking-[0.15em] md:tracking-[0.2em] uppercase whitespace-nowrap transition-opacity duration-300 ${atTop ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}
+            >
+              ALTUM CAPITAL
+            </span>
           </Link>
 
-          {/* Desktop menu */}
-          <ul className="hidden md:flex items-center gap-8">
+          {/* Desktop menu: centrado en la barra */}
+          <ul className="hidden md:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             {navItems.map(({ label, path }) => (
               <li key={label}>
                 {path === '/' ? (
@@ -49,7 +77,7 @@ export default function Navbar() {
                 )}
               </li>
             ))}
-            {role === 'admin' && (
+            {isAdmin && (
               <li>
                 <Link
                   to="/admin"
@@ -63,22 +91,33 @@ export default function Navbar() {
             )}
           </ul>
 
-          {/* DEV: toggle rol - eliminar en producción */}
-          <div className="hidden md:block">
-            <button
-              type="button"
-              onClick={toggleRole}
-              className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded border border-gray-200"
-              title="Cambiar rol (solo desarrollo)"
-            >
-              Modo: {role === 'admin' ? 'Admin' : 'Usuario'}
-            </button>
-          </div>
-
+          {/* Solo si hay sesión: email y cerrar sesión; Panel Admin solo cuando role === admin */}
+          {user ? (
+            <div className="hidden md:flex items-center gap-4 z-10">
+              <span className="text-xs text-gray-500">{user.email}</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await signOut()
+                    window.location.href = '/'
+                  } catch (error) {
+                    console.error('Error signing out:', error)
+                  }
+                }}
+                className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded border border-gray-200"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          ) : (
+            /* Espaciador para que el menú centrado quede bien cuando no hay usuario */
+            <div className="hidden md:block min-w-[160px] md:min-w-[200px]" />
+          )}
           {/* Mobile menu button */}
           <button
             type="button"
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 z-10"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-expanded={mobileOpen}
             aria-label="Abrir menú"
@@ -118,7 +157,7 @@ export default function Navbar() {
                   )}
                 </li>
               ))}
-              {role === 'admin' && (
+              {isAdmin && (
                 <li>
                   <Link
                     to="/admin"
@@ -130,16 +169,27 @@ export default function Navbar() {
                 </li>
               )}
             </ul>
-            {/* DEV: toggle rol móvil */}
-            <div className="mt-2 pt-2 border-t border-gray-100 px-3">
-              <button
-                type="button"
-                onClick={toggleRole}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                Modo: {role === 'admin' ? 'Admin' : 'Usuario'}
-              </button>
-            </div>
+            {/* Solo si hay sesión: email y cerrar sesión (móvil) */}
+            {user && (
+              <div className="mt-2 pt-2 border-t border-gray-100 px-3">
+                <p className="text-xs text-gray-500 mb-2">{user.email}</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await signOut()
+                      setMobileOpen(false)
+                      window.location.href = '/'
+                    } catch (error) {
+                      console.error('Error signing out:', error)
+                    }
+                  }}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
           </div>
         )}
       </nav>

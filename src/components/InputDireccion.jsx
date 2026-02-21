@@ -22,8 +22,10 @@ export default function InputDireccion({
   useEffect(() => {
     const q = value?.trim() ?? ''
     if (q.length < 3) {
-      setSuggestions([])
-      setOpen(false)
+      // Mantener sugerencias visibles si ya hay algunas
+      if (suggestions.length === 0) {
+        setOpen(false)
+      }
       return
     }
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -32,28 +34,30 @@ export default function InputDireccion({
       searchAddressSuggestions(q)
         .then((list) => {
           setSuggestions(list)
-          setOpen(true)
+          setOpen(true) // Mantener abierto cuando hay sugerencias
         })
         .finally(() => setLoading(false))
     }, DEBOUNCE_MS)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [value])
+  }, [value, suggestions.length])
 
   const handleSelect = useCallback(
     (item) => {
       if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current)
       onChange?.(item.display_name)
       onCoordsSelect?.({ lat: item.lat, lng: item.lng })
-      setSuggestions([])
-      setOpen(false)
+      // No cerrar las sugerencias automáticamente - mantenerlas visibles
+      // setSuggestions([])
+      // setOpen(false)
     },
     [onChange, onCoordsSelect]
   )
 
   const handleBlur = useCallback(() => {
-    blurTimeoutRef.current = setTimeout(() => setOpen(false), 200)
+    // No cerrar automáticamente - dejar las sugerencias visibles
+    // blurTimeoutRef.current = setTimeout(() => setOpen(false), 200)
   }, [])
 
   const handleFocus = useCallback(() => {
@@ -63,9 +67,14 @@ export default function InputDireccion({
 
   useEffect(() => {
     function handleClickOutside(e) {
+      // Solo cerrar si se hace clic fuera Y no es un elemento de la lista de sugerencias
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current)
-        setOpen(false)
+        // Verificar si el clic es en un elemento de sugerencia
+        const isSuggestionClick = e.target.closest('ul[role="listbox"]')
+        if (!isSuggestionClick) {
+          if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current)
+          setOpen(false)
+        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside)

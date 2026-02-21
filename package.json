@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:one": "lsof -ti :5173 | xargs kill -9 2>/dev/null; vite",
     "build": "vite build",
     "preview": "vite preview"
   },

@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
+import { usePropiedades } from '../../context/PropiedadesContext'
 import ProjectCard from '../results/ProjectCard'
-import { mockProjects } from '../../data/mockProjects'
-
-const recent = mockProjects.slice(0, 6)
 
 export default function FeaturedProjects() {
+  const { list } = usePropiedades()
+  // Mostrar las primeras 6 propiedades
+  const recent = list.slice(0, 6)
+
   return (
     <section className="py-16 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,8 +17,8 @@ export default function FeaturedProjects() {
           Una selección de nuestros trabajos más recientes en arquitectura residencial y comercial.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {recent.map((project) => (
-            <ProjectCard key={project.id} project={project} compact />
+          {recent.map((propiedad) => (
+            <ProjectCard key={propiedad.id} project={propiedad} compact />
           ))}
         </div>
         <div className="mt-12 text-center">
