@@ -102,6 +102,8 @@ export default function PropiedadDetailPage() {
 
   const STORAGE_KEY_DETAIL = `propiedad-detail-override-${id}`
   const [isEditingDetail, setIsEditingDetail] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const shareMenuRef = useRef(null)
   const [editOverride, setEditOverride] = useState({
     titulo: propiedad?.titulo ?? '',
     tituloSeccion: `${propiedad?.tipo ?? ''} en venta ${propiedad?.zona || propiedad?.ciudad || ''}`.trim(),
@@ -186,6 +188,16 @@ export default function PropiedadDetailPage() {
       didInitEditRef.current = false
     }
   }, [isEditingDetail, propiedad?.descripcion, descripcionBase])
+
+  // Cerrar menú compartir al hacer clic fuera (siempre declarado para no variar número de hooks)
+  useEffect(() => {
+    if (!shareOpen) return
+    const onDocClick = (e) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) setShareOpen(false)
+    }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [shareOpen])
 
   // Mostrar loading mientras se cargan las propiedades
   if (propiedadesLoading) {
@@ -621,6 +633,48 @@ export default function PropiedadDetailPage() {
     setIsEditingDetail(false)
   }
 
+  // Compartir: Web Share API (nativo en iPhone/Android) o menú con copiar enlace / correo
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareTitle = (editOverride?.titulo || propiedad?.titulo || 'Propiedad').trim() || 'Propiedad'
+  const shareText = `${shareTitle} - ${propiedad ? formatPrecio(propiedad.precio) : ''}`
+
+  const handleShareClick = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        })
+        setShareOpen(false)
+        addToast({ type: 'success', message: 'Compartido' })
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setShareOpen(true)
+        }
+      }
+    } else {
+      setShareOpen((open) => !open)
+    }
+  }
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      addToast({ type: 'success', message: 'Enlace copiado' })
+      setShareOpen(false)
+    } catch (_) {
+      addToast({ type: 'error', message: 'No se pudo copiar el enlace' })
+    }
+  }
+
+  const handleShareEmail = () => {
+    const subject = `Propiedad: ${shareTitle}`
+    const body = `Mira esta propiedad:\n\n${shareUrl}\n\n${shareText}`
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    setShareOpen(false)
+  }
+
   // Datos mostrados: override desde localStorage (si hay) o desde propiedad
   const tituloMostrado = editOverride.titulo || propiedad.titulo
   const tituloSeccionMostrado = editOverride.tituloSeccion || `${propiedad.tipo} en venta ${propiedad.zona || propiedad.ciudad}`
@@ -708,10 +762,38 @@ export default function PropiedadDetailPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
               Español
             </button>
-            <button type="button" className="flex items-center gap-1.5 hover:text-gray-900" aria-label="Compartir">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-              Compartir
-            </button>
+            <div className="relative" ref={shareMenuRef}>
+              <button
+                type="button"
+                onClick={handleShareClick}
+                className="flex items-center gap-1.5 hover:text-gray-900"
+                aria-label="Compartir"
+                aria-expanded={shareOpen}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                Compartir
+              </button>
+              {shareOpen && (
+                <div className="absolute right-0 top-full mt-1 py-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    Copiar enlace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShareEmail}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    Enviar por correo
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -719,22 +801,10 @@ export default function PropiedadDetailPage() {
       {/* Collage de imágenes: 1 grande + 4 en grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
         {isEditingDetail && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-            <label className="block text-sm font-medium text-gray-700">URL imagen principal</label>
-            <input
-              type="text"
-              value={editOverride.imagen}
-              onChange={(e) => setEditOverride((o) => ({ ...o, imagen: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              placeholder="https://..."
-            />
-            <label className="block text-sm font-medium text-gray-700 mt-2">Galería (una URL por línea)</label>
-            <textarea
-              value={(editOverride.galeria || []).join('\n')}
-              onChange={(e) => setEditOverride((o) => ({ ...o, galeria: e.target.value.split('\n').map((u) => u.trim()).filter(Boolean) }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-24"
-              placeholder="https://...\nhttps://..."
-            />
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              Para edición de imágenes hacerlo desde el Panel Admin.
+            </p>
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 rounded-xl overflow-hidden bg-gray-100">

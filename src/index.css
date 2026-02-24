@@ -62,6 +62,19 @@ input:focus-visible {
   transform: translateX(-32px);
 }
 
+/* Nosotros: hero title entrance */
+.nosotros-hero-inner {
+  opacity: 0;
+  transform: translateY(32px);
+}
+.nosotros-hero-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.nosotros-hero-inner {
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Map: marcador minimalista */
 .map-marker-custom {
   background: none !important;

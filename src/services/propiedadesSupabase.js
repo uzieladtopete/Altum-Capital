@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { getPropertyImages } from './propertyImagesSupabase'
 
 const TABLE = 'Propiedades'
 const DETAILS_TABLE = 'detalles_prop'
@@ -10,8 +11,8 @@ const mapToDB = (prop) => {
   if (prop == null) return prop
   const { lng, ...rest } = prop
   const out = lng !== undefined ? { ...rest, long: lng } : rest
-  // En Propiedades van todos menos los que viven en detalles_prop
-  const { amenidades, recamaras, banos, estacionamientos, anio_construccion, piso, ...restFiltered } = out
+  // En Propiedades van todos menos los que viven en detalles_prop; galeria no se guarda aquí (se usa property_images)
+  const { amenidades, recamaras, banos, estacionamientos, anio_construccion, piso, galeria, ...restFiltered } = out
   return { ...restFiltered }
 }
 
@@ -128,7 +129,16 @@ export async function getPropiedadById(id) {
       data = { ...data, detalles_prop: detData ? [detData] : [] }
     }
   }
-  return data ? mapFromDB(data) : null
+  if (!data) return null
+  const out = mapFromDB(data)
+  const images = await getPropertyImages(id)
+  if (images.length) {
+    const cover = images.find((i) => i.is_cover) || images[0]
+    out.imagen = cover?.image_url ?? out.imagen
+    out.galeria = images.map((i) => i.image_url).filter(Boolean)
+    out.property_images = images
+  }
+  return out
 }
 
 export async function createPropiedad(propiedad) {

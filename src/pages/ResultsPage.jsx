@@ -71,7 +71,7 @@ export default function ResultsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Filtro />
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16 lg:pb-6">
         <h1 className="font-serif text-2xl md:text-3xl font-semibold text-gray-900 mb-1">
           Resultados
         </h1>
@@ -87,10 +87,10 @@ export default function ResultsPage() {
             <p className="text-gray-600 mb-4">
               {propiedades.length} {propiedades.length === 1 ? 'propiedad encontrada' : 'propiedades encontradas'}
             </p>
-            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100vh-16rem)] min-h-[400px]">
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[calc(100vh-16rem)] min-h-0 lg:min-h-[400px]">
               <div
                 ref={mapContainerRef}
-                className="lg:w-[70%] h-[320px] lg:h-full flex-shrink-0 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm"
+                className="lg:w-[70%] h-[260px] sm:h-[280px] lg:h-full flex-shrink-0 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm"
               >
                 <Mapa
                   propiedades={Array.isArray(propiedades) ? propiedades : []}
@@ -98,8 +98,8 @@ export default function ResultsPage() {
                   onSelect={setSelectedId}
                 />
               </div>
-              <div className="lg:w-[30%] lg:min-w-[280px] flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-                <div className="px-3 py-2 border-b border-gray-100 text-sm font-medium text-gray-700">
+              <div className="lg:w-[30%] lg:min-w-[280px] flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden max-lg:min-h-0 max-lg:border-0 max-lg:shadow-none max-lg:bg-transparent">
+                <div className="px-3 py-2 border-b border-gray-100 text-sm font-medium text-gray-700 max-lg:border-gray-200 max-lg:bg-white max-lg:rounded-t-xl">
                   Propiedades
                 </div>
                 <ListaPropiedades
@@ -112,7 +112,7 @@ export default function ResultsPage() {
                 />
               </div>
             </div>
-            <div className="h-[50px] flex-shrink-0" aria-hidden />
+            <div className="h-8 flex-shrink-0" aria-hidden />
           </>
         )}
       </div>

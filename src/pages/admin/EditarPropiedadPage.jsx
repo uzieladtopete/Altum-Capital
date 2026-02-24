@@ -5,6 +5,8 @@ import { useToast } from '../../context/ToastContext'
 import { geocodeAddress, DEFAULT_CENTER } from '../../services/geocoding'
 import MapaPreview from '../../components/MapaPreview'
 import InputDireccion from '../../components/InputDireccion'
+import PropertyImageUploader from '../../components/PropertyImageUploader'
+import { getPropertyImages, insertPropertyImages, deleteAllPropertyImages } from '../../services/propertyImagesSupabase'
 import { AMENIDADES_OPCIONES } from '../../constants/amenidades'
 
 const CIUDADES = [
@@ -68,7 +70,6 @@ export default function EditarPropiedadPage() {
   const navigate = useNavigate()
   const { list, updatePropiedad } = usePropiedades()
   const { addToast } = useToast()
-  const fileInputRef = useRef(null)
   const prop = list.find((p) => p.id === id)
 
   const [form, setForm] = useState({
@@ -80,7 +81,6 @@ export default function EditarPropiedadPage() {
     m2: '',
     estado: 'Disponible',
     direccion: '',
-    imagen: '',
     lat: '',
     lng: '',
     descripcion: '',
@@ -89,7 +89,6 @@ export default function EditarPropiedadPage() {
     estacionamientos: '',
     anio_construccion: '',
     piso: '',
-    galeria: '',
     amenidadesGeneral: [],
     amenidadesPoliticas: [],
     amenidadesRecreacion: [],
@@ -97,7 +96,8 @@ export default function EditarPropiedadPage() {
     amenidadesOtroPoliticas: [],
     amenidadesOtroRecreacion: [],
   })
-  const [imagePreviewUrl, setImagePreviewUrl] = useState('')
+  const [portadaImages, setPortadaImages] = useState([])
+  const [galeriaImages, setGaleriaImages] = useState([])
   const [previewCoords, setPreviewCoords] = useState(null)
   const [geocodeError, setGeocodeError] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -106,7 +106,6 @@ export default function EditarPropiedadPage() {
 
   useEffect(() => {
     if (prop) {
-      const galeria = Array.isArray(prop.galeria) ? prop.galeria.join('\n') : ''
       const am = prop.amenidades && typeof prop.amenidades === 'object' ? prop.amenidades : {}
       const listGeneral = AMENIDADES_OPCIONES.general
       const listPoliticas = AMENIDADES_OPCIONES.politicas
@@ -129,7 +128,6 @@ export default function EditarPropiedadPage() {
         m2: prop.m2 != null ? String(prop.m2) : '',
         estado: prop.estado ?? 'Disponible',
         direccion: prop.direccion ?? '',
-        imagen: prop.imagen ?? '',
         lat: prop.lat != null ? prop.lat : '',
         lng: prop.lng != null ? prop.lng : '',
         descripcion: prop.descripcion ?? '',
@@ -138,7 +136,6 @@ export default function EditarPropiedadPage() {
         estacionamientos: prop.estacionamientos != null ? String(prop.estacionamientos) : '',
         anio_construccion: prop.anio_construccion != null ? String(prop.anio_construccion) : '',
         piso: prop.piso != null ? String(prop.piso) : '',
-        galeria,
         amenidadesGeneral,
         amenidadesPoliticas,
         amenidadesRecreacion,
@@ -149,7 +146,6 @@ export default function EditarPropiedadPage() {
       if (prop.lat != null && prop.lng != null) {
         setPreviewCoords({ lat: prop.lat, lng: prop.lng })
       }
-      // Si tiene coordenadas pero no dirección, mostrar en modo coordenadas
       if ((prop.lat != null || prop.lng != null) && !prop.direccion) {
         setInputMode('coordenadas')
       } else {
@@ -158,11 +154,22 @@ export default function EditarPropiedadPage() {
     }
   }, [prop])
 
+  // Cargar imágenes: desde property_images; si no hay, usar prop.imagen y prop.galeria (compat)
   useEffect(() => {
-    return () => {
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
-    }
-  }, [imagePreviewUrl])
+    if (!id) return
+    getPropertyImages(id).then((imgs) => {
+      if (imgs.length) {
+        const cover = imgs.filter((i) => i.is_cover).map((img) => ({ id: img.id, image_url: img.image_url, is_cover: true, order_index: 0 }))
+        const gallery = imgs.filter((i) => !i.is_cover).map((img) => ({ id: img.id, image_url: img.image_url, is_cover: false, order_index: img.order_index }))
+        setPortadaImages(cover.length ? [cover[0]] : [])
+        setGaleriaImages(gallery)
+      } else if (prop?.imagen) {
+        setPortadaImages([{ id: null, image_url: prop.imagen, is_cover: true, order_index: 0 }])
+        const galeria = Array.isArray(prop.galeria) ? prop.galeria : []
+        setGaleriaImages(galeria.map((url, i) => ({ id: null, image_url: url, is_cover: false, order_index: i })))
+      }
+    })
+  }, [id, prop?.imagen, prop?.galeria])
 
   const handleChange = useCallback((field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -227,11 +234,13 @@ export default function EditarPropiedadPage() {
       return
     }
 
-    const imagenUrl = imagePreviewUrl || form.imagen?.trim() || ''
-    if (!imagenUrl) {
-      addToast({ type: 'error', message: 'La imagen es obligatoria.' })
+    const hasPortada = portadaImages?.length > 0
+    const hasGaleria = galeriaImages?.length > 0
+    if (!hasPortada && !hasGaleria) {
+      addToast({ type: 'error', message: 'Sube al menos la imagen de portada o una imagen en galería.' })
       return
     }
+    const imagenUrl = portadaImages?.[0]?.image_url || galeriaImages?.[0]?.image_url
 
     const hasManualCoords =
       typeof form.lat === 'number' && typeof form.lng === 'number' && !Number.isNaN(form.lat) && !Number.isNaN(form.lng)
@@ -252,9 +261,7 @@ export default function EditarPropiedadPage() {
     const estacionamientos = form.estacionamientos.trim() ? Number(form.estacionamientos) : null
     const anio_construccion = form.anio_construccion.trim() ? Number(form.anio_construccion) : null
     const piso = form.piso.trim() ? Number(form.piso) : null
-    const galeria = form.galeria.trim()
-      ? form.galeria.split('\n').map((u) => u.trim()).filter(Boolean)
-      : []
+    const galeria = null
     const amenidades = {
       general: [...(form.amenidadesGeneral || []), ...(form.amenidadesOtroGeneral || [])],
       politicas: [...(form.amenidadesPoliticas || []), ...(form.amenidadesOtroPoliticas || [])],
@@ -281,9 +288,17 @@ export default function EditarPropiedadPage() {
         estacionamientos: Number.isNaN(estacionamientos) ? null : estacionamientos,
         anio_construccion: Number.isNaN(anio_construccion) ? null : anio_construccion,
         piso: Number.isNaN(piso) ? null : piso,
-        galeria: galeria.length > 0 ? galeria : null,
+        galeria,
         amenidades: (amenidades.general.length || amenidades.politicas.length || amenidades.recreacion.length) ? amenidades : null,
       })
+      await deleteAllPropertyImages(id)
+      const allImages = [
+        ...portadaImages.map((img) => ({ image_url: img.image_url, is_cover: true, order_index: 0 })),
+        ...galeriaImages.map((img, i) => ({ image_url: img.image_url, is_cover: false, order_index: portadaImages.length + i })),
+      ]
+      if (allImages.length) {
+        await insertPropertyImages(id, allImages)
+      }
       addToast({ type: 'success', message: 'Propiedad actualizada correctamente' })
       navigate('/admin')
     } catch (err) {
@@ -423,39 +438,31 @@ export default function EditarPropiedadPage() {
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor="imagen" className="block text-sm font-medium text-gray-700 mb-1">
-            Imagen
-          </label>
-          <input
-            ref={fileInputRef}
-            id="imagen"
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
-              if (file) {
-                const url = URL.createObjectURL(file)
-                setImagePreviewUrl(url)
-                setForm((prev) => ({ ...prev, imagen: url }))
-              } else {
-                setImagePreviewUrl('')
-                setForm((prev) => ({ ...prev, imagen: prop.imagen ?? '' }))
-              }
+        <div className="space-y-6">
+          <PropertyImageUploader
+            label="Portada"
+            maxImages={1}
+            showCoverButton={false}
+            value={portadaImages}
+            onChange={(updaterOrValue) => {
+              setPortadaImages((prev) =>
+                typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+              )
             }}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 file:mr-4 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+            disabled={isSubmitting}
           />
-          {(imagePreviewUrl || form.imagen) && (
-            <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 inline-block max-w-xs">
-              <p className="text-xs text-gray-500 px-2 py-1 bg-gray-50">Vista previa</p>
-              <img
-                src={imagePreviewUrl || form.imagen}
-                alt="Vista previa"
-                className="w-full h-40 object-cover"
-              />
-            </div>
-          )}
+          <PropertyImageUploader
+            label="Galería"
+            maxImages={20}
+            showCoverButton={false}
+            value={galeriaImages}
+            onChange={(updaterOrValue) => {
+              setGaleriaImages((prev) =>
+                typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+              )
+            }}
+            disabled={isSubmitting}
+          />
         </div>
         <div>
           <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-1">
@@ -532,19 +539,6 @@ export default function EditarPropiedadPage() {
               placeholder="—"
             />
           </div>
-        </div>
-        <div>
-          <label htmlFor="galeria" className="block text-sm font-medium text-gray-700 mb-1">
-            Galería (URLs de imágenes, una por línea)
-          </label>
-          <textarea
-            id="galeria"
-            rows={3}
-            value={form.galeria}
-            onChange={(e) => handleChange('galeria', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 font-mono text-sm"
-            placeholder="https://ejemplo.com/img1.jpg"
-          />
         </div>
         <div>
           <p className="block text-xs font-medium text-gray-600 mb-2">Amenidades (clic en cuadro para añadir; pasa el mouse en la barra y usa × para quitar)</p>

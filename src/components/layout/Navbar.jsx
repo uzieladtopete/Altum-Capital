@@ -1,34 +1,52 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useContactModal } from '../../context/ContactModalContext'
 
 const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
-const SCROLL_DURATION_MS = 1600 // más lento y suave al clic en logo
+const SCROLL_DURATION_MS = 650 // más rápido y natural al clic en logo
 
+/**
+ * Scroll suave al tope. Devuelve una función para cancelar la animación
+ * (p. ej. si el usuario hace scroll hacia abajo).
+ */
 function smoothScrollToTop(durationMs = SCROLL_DURATION_MS) {
+  let rafId = null
+  let cancelled = false
   const start = window.scrollY
   const startTime = performance.now()
+
   function step(now) {
+    if (cancelled) return
     const elapsed = now - startTime
     const progress = Math.min(elapsed / durationMs, 1)
-    const ease = 1 - (1 - progress) ** 2
+    const ease = 1 - (1 - progress) ** 2 // easeOutQuad
     window.scrollTo(0, start * (1 - ease))
-    if (progress < 1) requestAnimationFrame(step)
+    if (progress < 1) rafId = requestAnimationFrame(step)
   }
-  requestAnimationFrame(step)
+
+  rafId = requestAnimationFrame(step)
+
+  return function cancel() {
+    cancelled = true
+    if (rafId != null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
+  }
 }
 
 const navItems = [
   { label: 'Inicio', path: '/' },
   { label: 'Proyectos', path: '#' },
-  { label: 'Nosotros', path: '#' },
+  { label: 'Nosotros', path: '/nosotros' },
   { label: 'Contacto', path: '#' },
 ]
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [atTop, setAtTop] = useState(true)
+  const scrollToTopCancelRef = useRef(null)
   const location = useLocation()
   const { user, role, signOut } = useAuth()
   const { openContactModal } = useContactModal()
@@ -39,6 +57,28 @@ export default function Navbar() {
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Si el usuario hace scroll hacia abajo durante la animación de "subir", cancelarla para no trabar la página
+  useEffect(() => {
+    const onWheel = (e) => {
+      if (e.deltaY > 0 && scrollToTopCancelRef.current) {
+        scrollToTopCancelRef.current()
+        scrollToTopCancelRef.current = null
+      }
+    }
+    const onTouchMove = () => {
+      if (scrollToTopCancelRef.current) {
+        scrollToTopCancelRef.current()
+        scrollToTopCancelRef.current = null
+      }
+    }
+    window.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchmove', onTouchMove)
+    }
   }, [])
 
   return (
@@ -53,9 +93,13 @@ export default function Navbar() {
             onClick={(e) => {
               if (location.pathname === '/') {
                 e.preventDefault()
-                smoothScrollToTop()
+                scrollToTopCancelRef.current?.()
+                scrollToTopCancelRef.current = smoothScrollToTop()
               } else {
-                setTimeout(() => smoothScrollToTop(), 150)
+                scrollToTopCancelRef.current?.()
+                setTimeout(() => {
+                  scrollToTopCancelRef.current = smoothScrollToTop()
+                }, 150)
               }
             }}
           >
@@ -95,6 +139,15 @@ export default function Navbar() {
                   >
                     {label}
                   </button>
+                ) : path.startsWith('/') ? (
+                  <Link
+                    to={path}
+                    className={`text-sm font-medium tracking-wide transition-colors ${
+                      location.pathname === path ? 'text-accent' : 'text-gray-600 hover:text-accent'
+                    }`}
+                  >
+                    {label}
+                  </Link>
                 ) : (
                   <a
                     href={path}
@@ -185,6 +238,14 @@ export default function Navbar() {
                     >
                       {label}
                     </button>
+                  ) : path.startsWith('/') ? (
+                    <Link
+                      to={path}
+                      className="block py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {label}
+                    </Link>
                   ) : (
                     <a
                       href={path}
