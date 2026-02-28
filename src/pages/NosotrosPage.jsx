@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import AnimateOnScroll from '../components/AnimateOnScroll'
+import VisionPatrimonio from '../components/home/VisionPatrimonio'
 import { useContactModal } from '../context/ContactModalContext'
 
 // Hero con título que entra suave (sin depender de IntersectionObserver para el primer frame)
@@ -26,7 +27,7 @@ function HeroNosotros() {
           </h1>
           <div className={`mt-8 h-px w-24 mx-auto bg-white/50 transition-all duration-700 delay-300 ${mounted ? 'opacity-100' : 'opacity-0'}`} />
           <p className="mt-8 text-lg sm:text-xl text-white/90 font-light max-w-xl mx-auto">
-            Te guiamos en cada paso: desde la búsqueda hasta la firma y más allá.
+            Porque no solo vendemos propiedades, construimos patrimonio.
           </p>
         </div>
       </div>
@@ -73,18 +74,21 @@ export default function NosotrosPage() {
       <HeroNosotros />
 
       {/* Introducción */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-16 md:py-24 bg-white h-[310px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimateOnScroll direction="up">
             <p className="font-serif text-2xl md:text-3xl text-gray-700 italic max-w-3xl mx-auto text-center leading-relaxed">
               “Comprar o vender una propiedad es una decisión grande; por eso nos enfocamos en seguridad, proceso claro y acompañamiento en cada paso.”
             </p>
             <p className="mt-8 text-gray-600 text-center max-w-xl mx-auto">
-              En Altum Capital somos una inmobiliaria con enfoque en confianza y trato cercano: te ayudamos a encontrar la propiedad que buscas o a vender la tuya con orden y tranquilidad.
+              Nuestro objetivo no es cerrar una venta, sino construir relaciones duraderas basadas en confianza y resultados.
             </p>
           </AnimateOnScroll>
         </div>
       </section>
+
+      {/* Visión estratégica / Patrimonio en ascenso */}
+      <VisionPatrimonio />
 
       {/* Pilares */}
       <section className="py-16 md:py-24 bg-gray-50 border-y border-gray-100">

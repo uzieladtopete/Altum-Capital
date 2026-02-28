@@ -38,8 +38,9 @@ function smoothScrollToTop(durationMs = SCROLL_DURATION_MS) {
 
 const navItems = [
   { label: 'Inicio', path: '/' },
-  { label: 'Proyectos', path: '#' },
+  { label: 'Propiedades', path: '/resultados' },
   { label: 'Nosotros', path: '/nosotros' },
+  { label: 'Bolsa de trabajo', path: '/bolsa-de-trabajo' },
   { label: 'Contacto', path: '#' },
 ]
 

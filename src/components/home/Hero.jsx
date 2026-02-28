@@ -21,7 +21,7 @@ export default function Hero() {
         </AnimateOnScroll>
         <AnimateOnScroll direction="up" delay={0.25}>
           <p className="mt-6 text-lg sm:text-xl text-white/90 font-light max-w-2xl mx-auto">
-            Arquitectura contemporánea con enfoque en luz, materiales y bienestar.
+            Donde Las Oportunidades Alcanzan Su Punto Más Alto
           </p>
         </AnimateOnScroll>
       </div>

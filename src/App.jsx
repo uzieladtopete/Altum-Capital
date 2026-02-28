@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout'
 import AdminRoute from './components/AdminRoute'
 import HomePage from './pages/HomePage'
 import NosotrosPage from './pages/NosotrosPage'
+import BolsaDeTrabajoPage from './pages/BolsaDeTrabajoPage'
 import ResultsPage from './pages/ResultsPage'
 import PropiedadDetailPage from './pages/PropiedadDetailPage'
 import LoginPage from './pages/LoginPage'
@@ -17,6 +18,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/nosotros" element={<NosotrosPage />} />
+        <Route path="/bolsa-de-trabajo" element={<BolsaDeTrabajoPage />} />
         <Route path="/resultados" element={<ResultsPage />} />
         <Route path="/propiedad/:id" element={<PropiedadDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
