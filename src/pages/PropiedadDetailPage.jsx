@@ -29,6 +29,7 @@ export default function PropiedadDetailPage() {
   const [propiedadFull, setPropiedadFull] = useState(null)
   const propiedad = propiedadFull ?? propiedadFromList
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [carouselOpen, setCarouselOpen] = useState(false)
   const isAdmin = role === 'admin'
 
   // Cargar propiedad por ID para tener siempre datos completos (amenidades, recámaras, etc. desde detalles_prop)
@@ -74,6 +75,14 @@ export default function PropiedadDetailPage() {
       setSelectedImageIndex(0)
     }
   }, [propiedad, imagenes.length])
+
+  // Cerrar carrusel con Escape
+  useEffect(() => {
+    if (!carouselOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') setCarouselOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [carouselOpen])
 
   // Descripción: usar la de Supabase si existe; solo generar automática si es null/undefined
   const descripcionGenerada = !propiedad ? '' : `Hermosa ${(propiedad.tipo || '').toLowerCase()} ubicada en ${propiedad.ciudad}${propiedad.zona ? `, ${propiedad.zona}` : ''}. Con ${propiedad.m2} m² de construcción, esta propiedad ofrece espacios amplios y modernos. ${propiedad.estado === 'Disponible' ? 'Disponible para venta.' : propiedad.estado === 'Vendido' ? 'Ya vendida.' : 'En preventa.'}`
@@ -680,11 +689,20 @@ export default function PropiedadDetailPage() {
   const tituloSeccionMostrado = editOverride.tituloSeccion || `${propiedad.tipo} en venta ${propiedad.zona || propiedad.ciudad}`
   const imagenPrincipal = editOverride.imagen || propiedad.imagen
   const galeriaMostrada = editOverride.galeria.length > 0 ? editOverride.galeria : (propiedad.galeria || [])
-  const imagenesParaMostrar = imagenPrincipal ? [imagenPrincipal, ...galeriaMostrada].filter(Boolean) : []
-  const imagenesParaGridMostrado = imagenesParaMostrar.length >= 5
-    ? imagenesParaMostrar.slice(0, 5)
-    : imagenesParaMostrar.length > 0
-      ? [...imagenesParaMostrar, ...Array(5 - imagenesParaMostrar.length).fill(imagenesParaMostrar[0])].slice(0, 5)
+  const imagenesCarousel = galeriaMostrada.length > 0 ? galeriaMostrada : []
+  // Sin portada en principal ni en grid: principal = primera de galería (o portada solo si no hay galería)
+  const imagenPrincipalSlot = galeriaMostrada.length > 0 ? galeriaMostrada[0] : imagenPrincipal
+  const thumbnails4 =
+    galeriaMostrada.length >= 5
+      ? galeriaMostrada.slice(1, 5)
+      : galeriaMostrada.length > 1
+        ? [...galeriaMostrada.slice(1), ...Array(4 - (galeriaMostrada.length - 1)).fill(galeriaMostrada[galeriaMostrada.length - 1])].slice(0, 4)
+        : galeriaMostrada.length === 1
+          ? Array(4).fill(galeriaMostrada[0])
+          : imagenPrincipal ? Array(4).fill(imagenPrincipal) : []
+  const imagenesParaGridMostrado =
+    imagenPrincipalSlot || thumbnails4.length > 0
+      ? [imagenPrincipalSlot, ...thumbnails4].slice(0, 5)
       : []
   // Prioridad: 1) propiedad.descripcion de Supabase, 2) editOverride (localStorage), 3) descripción generada
   const descripcionMostrada = (propiedad?.descripcion != null && propiedad.descripcion !== '') 
@@ -821,7 +839,7 @@ export default function PropiedadDetailPage() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-square">
+              <div key={i} className="aspect-square relative group">
                 {imagenesParaGridMostrado[i] ? (
                   <ImagenPropiedad
                     src={imagenesParaGridMostrado[i]}
@@ -831,14 +849,84 @@ export default function PropiedadDetailPage() {
                 ) : (
                   <div className="w-full h-full bg-gray-200" />
                 )}
+                {i === 4 && imagenesCarousel.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedImageIndex(Math.min(3, imagenesCarousel.length - 1))
+                      setCarouselOpen(true)
+                    }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                    aria-label="Ver galería de fotos"
+                  >
+                    <span className="w-12 h-12 rounded-full bg-white text-gray-900 flex items-center justify-center text-2xl font-light shadow-lg">
+                      +
+                    </span>
+                  </button>
+                )}
               </div>
             ))}
           </div>
         </div>
-        {imagenesParaMostrar.length > 5 && (
+        {imagenesCarousel.length > 1 && (
           <p className="mt-2 text-center text-sm text-gray-500">
-            Ver todas ({imagenesParaMostrar.length}) fotos
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedImageIndex(0)
+                setCarouselOpen(true)
+              }}
+              className="text-gray-700 hover:text-gray-900 underline"
+            >
+              Ver todas ({imagenesCarousel.length}) fotos
+            </button>
           </p>
+        )}
+
+        {/* Carrusel / lightbox solo galería (sin imagen de portada) */}
+        {carouselOpen && imagenesCarousel.length > 0 && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Galería de fotos"
+            onClick={(e) => e.target === e.currentTarget && setCarouselOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setCarouselOpen(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              aria-label="Cerrar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedImageIndex((prev) => (prev <= 0 ? imagenesCarousel.length - 1 : prev - 1))}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              aria-label="Anterior"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <div className="max-w-5xl max-h-[90vh] w-full mx-4 flex items-center justify-center">
+              <ImagenPropiedad
+                src={imagenesCarousel[selectedImageIndex]}
+                alt={`${tituloMostrado} - Foto ${selectedImageIndex + 1}`}
+                className="max-w-full max-h-[90vh] w-auto h-auto object-contain"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedImageIndex((prev) => (prev >= imagenesCarousel.length - 1 ? 0 : prev + 1))}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              aria-label="Siguiente"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/90 text-sm">
+              {selectedImageIndex + 1} / {imagenesCarousel.length}
+            </p>
+          </div>
         )}
       </div>
 

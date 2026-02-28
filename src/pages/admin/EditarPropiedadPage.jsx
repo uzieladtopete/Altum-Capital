@@ -7,6 +7,7 @@ import MapaPreview from '../../components/MapaPreview'
 import InputDireccion from '../../components/InputDireccion'
 import PropertyImageUploader from '../../components/PropertyImageUploader'
 import { getPropertyImages, insertPropertyImages, deleteAllPropertyImages } from '../../services/propertyImagesSupabase'
+import { getAmenidadesOpciones, upsertAmenidadesOpciones } from '../../services/amenidadesSupabase'
 import { AMENIDADES_OPCIONES } from '../../constants/amenidades'
 
 const CIUDADES = [
@@ -29,13 +30,14 @@ const DEBOUNCE_MS = 800
 
 /**
  * Convierte coordenadas DMS (grados/minutos/segundos) a decimal
- * Formato esperado: "20°41'31"N 103°20'36"W" o variaciones
+ * Formato: "20°41'31"N 103°20'36"W" o con segundos decimales: "20°36'46.4"N 103°29'09.6"W"
  */
 function parseDMSToDecimal(dmsString) {
   const trimmed = dmsString.trim()
   if (!trimmed) return null
 
-  const dmsPattern = /(\d+)[°\s]+(\d+)['\s]+(\d+)["]*\s*([NSEW])/gi
+  // Patrón: grados° minutos' segundos" dirección (segundos pueden ser decimales, ej. 46.4)
+  const dmsPattern = /(\d+)[°\s]+(\d+)['\s]+(\d+(?:\.\d+)?)["]*\s*([NSEW])/gi
   const matches = [...trimmed.matchAll(dmsPattern)]
 
   if (matches.length < 2) return null
@@ -103,6 +105,14 @@ export default function EditarPropiedadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [inputMode, setInputMode] = useState('direccion')
   const [coordenadasDMS, setCoordenadasDMS] = useState('')
+  const [opcionesCustom, setOpcionesCustom] = useState({ general: [], politicas: [], recreacion: [] })
+  const [otroInputGeneral, setOtroInputGeneral] = useState('')
+  const [otroInputPoliticas, setOtroInputPoliticas] = useState('')
+  const [otroInputRecreacion, setOtroInputRecreacion] = useState('')
+
+  useEffect(() => {
+    getAmenidadesOpciones().then(setOpcionesCustom)
+  }, [])
 
   useEffect(() => {
     if (prop) {
@@ -299,6 +309,11 @@ export default function EditarPropiedadPage() {
       if (allImages.length) {
         await insertPropertyImages(id, allImages)
       }
+      await Promise.all([
+        upsertAmenidadesOpciones('general', form.amenidadesOtroGeneral || []),
+        upsertAmenidadesOpciones('politicas', form.amenidadesOtroPoliticas || []),
+        upsertAmenidadesOpciones('recreacion', form.amenidadesOtroRecreacion || []),
+      ])
       addToast({ type: 'success', message: 'Propiedad actualizada correctamente' })
       navigate('/admin')
     } catch (err) {
@@ -496,6 +511,7 @@ export default function EditarPropiedadPage() {
               id="banos"
               type="number"
               min="0"
+              step="any"
               value={form.banos}
               onChange={(e) => handleChange('banos', e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
@@ -543,171 +559,102 @@ export default function EditarPropiedadPage() {
         <div>
           <p className="block text-xs font-medium text-gray-600 mb-2">Amenidades (clic en cuadro para añadir; pasa el mouse en la barra y usa × para quitar)</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* General */}
-            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
-              <p className="text-xs font-medium text-gray-800 mb-2">General</p>
-              <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-white mb-3">
-                {(form.amenidadesGeneral || []).map((label) => (
-                  <span
-                    key={label}
-                    className="group inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-800"
-                  >
-                    {label}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = (form.amenidadesGeneral || []).filter((x) => x !== label)
-                        handleChange('amenidadesGeneral', next)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity"
-                      aria-label="Quitar"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 gap-1.5">
-                {AMENIDADES_OPCIONES.general.map((label) => {
-                  const selected = (form.amenidadesGeneral || []).includes(label)
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => {
-                        const arr = form.amenidadesGeneral || []
-                        const next = selected ? arr.filter((x) => x !== label) : [...arr, label]
-                        handleChange('amenidadesGeneral', next)
-                      }}
-                      className={`w-full px-3 py-2 text-xs text-left rounded-lg border transition-colors ${
-                        selected
-                          ? 'border-gray-900 bg-gray-900 text-white'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
-              <textarea
-                value={(form.amenidadesOtroGeneral || []).join('\n')}
-                onChange={(e) => handleChange('amenidadesOtroGeneral', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
-                placeholder="Ej: Estacionamiento visitas"
-              />
-            </div>
-            {/* Políticas */}
-            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
-              <p className="text-xs font-medium text-gray-800 mb-2">Políticas</p>
-              <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-white mb-3">
-                {(form.amenidadesPoliticas || []).map((label) => (
-                  <span
-                    key={label}
-                    className="group inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-800"
-                  >
-                    {label}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = (form.amenidadesPoliticas || []).filter((x) => x !== label)
-                        handleChange('amenidadesPoliticas', next)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity"
-                      aria-label="Quitar"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 gap-1.5">
-                {AMENIDADES_OPCIONES.politicas.map((label) => {
-                  const selected = (form.amenidadesPoliticas || []).includes(label)
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => {
-                        const arr = form.amenidadesPoliticas || []
-                        const next = selected ? arr.filter((x) => x !== label) : [...arr, label]
-                        handleChange('amenidadesPoliticas', next)
-                      }}
-                      className={`w-full px-3 py-2 text-xs text-left rounded-lg border transition-colors ${
-                        selected
-                          ? 'border-gray-900 bg-gray-900 text-white'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
-              <textarea
-                value={(form.amenidadesOtroPoliticas || []).join('\n')}
-                onChange={(e) => handleChange('amenidadesOtroPoliticas', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
-                placeholder="Ej: Renta flexible"
-              />
-            </div>
-            {/* Recreación */}
-            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
-              <p className="text-xs font-medium text-gray-800 mb-2">Recreación</p>
-              <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-white mb-3">
-                {(form.amenidadesRecreacion || []).map((label) => (
-                  <span
-                    key={label}
-                    className="group inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-800"
-                  >
-                    {label}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = (form.amenidadesRecreacion || []).filter((x) => x !== label)
-                        handleChange('amenidadesRecreacion', next)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity"
-                      aria-label="Quitar"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 gap-1.5">
-                {AMENIDADES_OPCIONES.recreacion.map((label) => {
-                  const selected = (form.amenidadesRecreacion || []).includes(label)
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => {
-                        const arr = form.amenidadesRecreacion || []
-                        const next = selected ? arr.filter((x) => x !== label) : [...arr, label]
-                        handleChange('amenidadesRecreacion', next)
-                      }}
-                      className={`w-full px-3 py-2 text-xs text-left rounded-lg border transition-colors ${
-                        selected
-                          ? 'border-gray-900 bg-gray-900 text-white'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="text-xs text-gray-500 mt-2 mb-1">Otro (texto libre, una por línea)</p>
-              <textarea
-                value={(form.amenidadesOtroRecreacion || []).join('\n')}
-                onChange={(e) => handleChange('amenidadesOtroRecreacion', e.target.value.split('\n').filter((s) => s.trim() !== ''))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs min-h-[60px] resize-y mt-1"
-                placeholder="Ej: Roof garden"
-              />
-            </div>
+            {(() => {
+              const opcionesGeneral = [...AMENIDADES_OPCIONES.general, ...(opcionesCustom.general || [])].filter((v, i, a) => a.indexOf(v) === i)
+              const opcionesPoliticas = [...AMENIDADES_OPCIONES.politicas, ...(opcionesCustom.politicas || [])].filter((v, i, a) => a.indexOf(v) === i)
+              const opcionesRecreacion = [...AMENIDADES_OPCIONES.recreacion, ...(opcionesCustom.recreacion || [])].filter((v, i, a) => a.indexOf(v) === i)
+              return (
+                <>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
+                    <p className="text-xs font-medium text-gray-800 mb-2">General</p>
+                    <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-white mb-3">
+                      {(form.amenidadesGeneral || []).map((label) => (
+                        <span key={label} className="group inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-800">
+                          {label}
+                          <button type="button" onClick={() => { const next = (form.amenidadesGeneral || []).filter((x) => x !== label); handleChange('amenidadesGeneral', next) }} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity" aria-label="Quitar">×</button>
+                        </span>
+                      ))}
+                      {(form.amenidadesOtroGeneral || []).map((label) => (
+                        <span key={label} className="group inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-md text-xs text-gray-800">
+                          {label}
+                          <button type="button" onClick={() => { const next = (form.amenidadesOtroGeneral || []).filter((x) => x !== label); handleChange('amenidadesOtroGeneral', next) }} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity" aria-label="Quitar">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {opcionesGeneral.map((label) => {
+                        const selected = (form.amenidadesGeneral || []).includes(label)
+                        return (
+                          <button key={label} type="button" onClick={() => { const arr = form.amenidadesGeneral || []; const next = selected ? arr.filter((x) => x !== label) : [...arr, label]; handleChange('amenidadesGeneral', next) }} className={`w-full px-3 py-2 text-xs text-left rounded-lg border transition-colors ${selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'}`}>
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 mb-1">Otro: escribe y pulsa Enter para agregar</p>
+                    <input type="text" value={otroInputGeneral} onChange={(e) => setOtroInputGeneral(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const v = otroInputGeneral.trim(); if (v) { handleChange('amenidadesOtroGeneral', [...(form.amenidadesOtroGeneral || []), v]); setOtroInputGeneral('') } } }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mt-0" placeholder="Ej: Estacionamiento visitas" />
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
+                    <p className="text-xs font-medium text-gray-800 mb-2">Políticas</p>
+                    <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-white mb-3">
+                      {(form.amenidadesPoliticas || []).map((label) => (
+                        <span key={label} className="group inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-800">
+                          {label}
+                          <button type="button" onClick={() => { const next = (form.amenidadesPoliticas || []).filter((x) => x !== label); handleChange('amenidadesPoliticas', next) }} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity" aria-label="Quitar">×</button>
+                        </span>
+                      ))}
+                      {(form.amenidadesOtroPoliticas || []).map((label) => (
+                        <span key={label} className="group inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-md text-xs text-gray-800">
+                          {label}
+                          <button type="button" onClick={() => { const next = (form.amenidadesOtroPoliticas || []).filter((x) => x !== label); handleChange('amenidadesOtroPoliticas', next) }} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity" aria-label="Quitar">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {opcionesPoliticas.map((label) => {
+                        const selected = (form.amenidadesPoliticas || []).includes(label)
+                        return (
+                          <button key={label} type="button" onClick={() => { const arr = form.amenidadesPoliticas || []; const next = selected ? arr.filter((x) => x !== label) : [...arr, label]; handleChange('amenidadesPoliticas', next) }} className={`w-full px-3 py-2 text-xs text-left rounded-lg border transition-colors ${selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'}`}>
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 mb-1">Otro: escribe y pulsa Enter para agregar</p>
+                    <input type="text" value={otroInputPoliticas} onChange={(e) => setOtroInputPoliticas(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const v = otroInputPoliticas.trim(); if (v) { handleChange('amenidadesOtroPoliticas', [...(form.amenidadesOtroPoliticas || []), v]); setOtroInputPoliticas('') } } }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mt-0" placeholder="Ej: Renta flexible" />
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 min-w-0">
+                    <p className="text-xs font-medium text-gray-800 mb-2">Recreación</p>
+                    <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border border-gray-200 rounded-lg bg-white mb-3">
+                      {(form.amenidadesRecreacion || []).map((label) => (
+                        <span key={label} className="group inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-300 rounded-md text-xs text-gray-800">
+                          {label}
+                          <button type="button" onClick={() => { const next = (form.amenidadesRecreacion || []).filter((x) => x !== label); handleChange('amenidadesRecreacion', next) }} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity" aria-label="Quitar">×</button>
+                        </span>
+                      ))}
+                      {(form.amenidadesOtroRecreacion || []).map((label) => (
+                        <span key={label} className="group inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-md text-xs text-gray-800">
+                          {label}
+                          <button type="button" onClick={() => { const next = (form.amenidadesOtroRecreacion || []).filter((x) => x !== label); handleChange('amenidadesOtroRecreacion', next) }} className="opacity-0 group-hover:opacity-100 ml-0.5 text-gray-500 hover:text-red-600 transition-opacity" aria-label="Quitar">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {opcionesRecreacion.map((label) => {
+                        const selected = (form.amenidadesRecreacion || []).includes(label)
+                        return (
+                          <button key={label} type="button" onClick={() => { const arr = form.amenidadesRecreacion || []; const next = selected ? arr.filter((x) => x !== label) : [...arr, label]; handleChange('amenidadesRecreacion', next) }} className={`w-full px-3 py-2 text-xs text-left rounded-lg border transition-colors ${selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'}`}>
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 mb-1">Otro: escribe y pulsa Enter para agregar</p>
+                    <input type="text" value={otroInputRecreacion} onChange={(e) => setOtroInputRecreacion(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const v = otroInputRecreacion.trim(); if (v) { handleChange('amenidadesOtroRecreacion', [...(form.amenidadesOtroRecreacion || []), v]); setOtroInputRecreacion('') } } }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mt-0" placeholder="Ej: Roof garden" />
+                  </div>
+                </>
+              )
+            })()}
           </div>
         </div>
         <div id="seccion-ubicacion" className="space-y-0 border-t-2 border-gray-200 pt-6 mt-6">
@@ -771,7 +718,7 @@ export default function EditarPropiedadPage() {
                 type="text"
                 value={coordenadasDMS}
                 onChange={(e) => setCoordenadasDMS(e.target.value)}
-                placeholder={'Ej: 20°41\'31"N 103°20\'36"W'}
+                placeholder={'Ej: 20°36\'46.4"N 103°29\'09.6"W (segundos con decimales opcionales)'}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 font-mono text-sm"
               />
               <p className="mt-1 text-xs text-gray-500">
