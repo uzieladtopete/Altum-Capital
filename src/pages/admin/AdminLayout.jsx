@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 
 const sidebarItems = [
   { label: 'Dashboard', path: '/admin' },
-  { label: 'Propiedades', path: '/admin' },
+  { label: 'Propiedades', path: '/admin/propiedades' },
   { label: 'Crear Propiedad', path: '/admin/crear' },
 ]
 

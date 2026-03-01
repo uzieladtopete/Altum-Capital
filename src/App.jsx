@@ -9,6 +9,7 @@ import PropiedadDetailPage from './pages/PropiedadDetailPage'
 import LoginPage from './pages/LoginPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
+import AdminPropiedadesPage from './pages/admin/AdminPropiedadesPage'
 import CrearPropiedadPage from './pages/admin/CrearPropiedadPage'
 import EditarPropiedadPage from './pages/admin/EditarPropiedadPage'
 
@@ -25,6 +26,7 @@ function App() {
         <Route path="/admin" element={<AdminRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<DashboardPage />} />
+            <Route path="propiedades" element={<AdminPropiedadesPage />} />
             <Route path="crear" element={<CrearPropiedadPage />} />
             <Route path="editar/:id" element={<EditarPropiedadPage />} />
           </Route>

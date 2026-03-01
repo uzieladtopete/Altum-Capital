@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useContactModal } from '../context/ContactModalContext'
 import { getPropiedadById } from '../services/propiedadesSupabase'
+import { recordPropertyView } from '../services/propertyViewsSupabase'
 import ImagenPropiedad from '../components/ImagenPropiedad'
 import MapaPreview from '../components/MapaPreview'
 
@@ -42,7 +43,13 @@ export default function PropiedadDetailPage() {
     })
     return () => { cancelled = true }
   }, [id])
-  
+
+  // Registrar una vista al abrir la ficha (una vez por carga de página)
+  useEffect(() => {
+    if (!id) return
+    recordPropertyView(id)
+  }, [id])
+
   // Detectar si viene del inicio o de resultados
   // Si viene del inicio (desde ProjectCard), el state tendrá from: '/'
   // Si viene de resultados o del mapa, irá a /resultados
@@ -310,7 +317,7 @@ export default function PropiedadDetailPage() {
       <div className="min-h-screen bg-white">
         {/* Botones de edición (solo admin) */}
         {isAdmin && (
-          <div className="fixed top-20 right-4 z-50 flex gap-2">
+          <div className="no-print fixed top-20 right-4 z-50 flex gap-2">
             {!isEditing ? (
               <button
                 type="button"
@@ -412,7 +419,7 @@ export default function PropiedadDetailPage() {
           {/* Botón volver */}
           <Link
             to={backPath}
-            className="absolute top-4 left-4 bg-white/90 hover:bg-white rounded-lg px-4 py-2 text-sm font-medium text-gray-900 shadow-lg transition-colors flex items-center gap-2"
+            className="no-print absolute top-4 left-4 bg-white/90 hover:bg-white rounded-lg px-4 py-2 text-sm font-medium text-gray-900 shadow-lg transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -684,6 +691,10 @@ export default function PropiedadDetailPage() {
     setShareOpen(false)
   }
 
+  const handlePrintPdf = () => {
+    window.print()
+  }
+
   // Datos mostrados: override desde localStorage (si hay) o desde propiedad
   const tituloMostrado = editOverride.titulo || propiedad.titulo
   const tituloSeccionMostrado = editOverride.tituloSeccion || `${propiedad.tipo} en venta ${propiedad.zona || propiedad.ciudad}`
@@ -719,7 +730,7 @@ export default function PropiedadDetailPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Botón Volver ARRIBA (siempre visible) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+      <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
         <Link
           to={backPath}
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
@@ -733,6 +744,7 @@ export default function PropiedadDetailPage() {
 
       {/* Botones de edición para admin (solo en detalle estándar) */}
       {isAdmin && (
+        <div className="no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2 flex flex-wrap gap-2">
           {!isEditingDetail ? (
             <button
@@ -757,9 +769,10 @@ export default function PropiedadDetailPage() {
             </>
           )}
         </div>
+        </div>
       )}
 
-      {/* Título (mismo que columna titulo en Supabase) y acciones (Español / Compartir) */}
+      {/* Título (mismo que columna titulo en Supabase) y acciones (Español / Compartir / PDF) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {isEditingDetail ? (
@@ -775,7 +788,7 @@ export default function PropiedadDetailPage() {
               {tituloMostrado}
             </h1>
           )}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="no-print flex items-center gap-4 text-sm text-gray-600">
             <button type="button" className="flex items-center gap-1.5 hover:text-gray-900" aria-label="Idioma">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
               Español
@@ -812,6 +825,16 @@ export default function PropiedadDetailPage() {
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              onClick={handlePrintPdf}
+              className="flex items-center gap-1.5 hover:text-gray-900"
+              aria-label="Guardar como PDF"
+              title="Imprimir o guardar como PDF"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9h6M9 13h6M9 17h3" /></svg>
+              PDF
+            </button>
           </div>
         </div>
       </div>
@@ -1167,7 +1190,7 @@ export default function PropiedadDetailPage() {
       </div>
 
       {/* Botón volver (fijo o en cabecera) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <Link
           to={backPath}
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
@@ -1180,7 +1203,7 @@ export default function PropiedadDetailPage() {
       </div>
 
       {/* Sidebar de contacto / Me interesa (abajo del contenido o sticky) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 max-w-md">
           <h3 className="font-serif text-lg font-semibold text-gray-900 mb-4">¿Te interesa esta propiedad?</h3>
           <div className="flex flex-col sm:flex-row gap-3">

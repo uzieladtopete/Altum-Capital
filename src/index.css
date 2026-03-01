@@ -322,3 +322,10 @@ input:focus-visible {
 .mapa-wrapper > div {
   pointer-events: auto;
 }
+
+/* Ocultar en impresión / PDF (botones, navegación, etc.) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
