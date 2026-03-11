@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { useContactModal } from '../../context/ContactModalContext'
 
 const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
 const SCROLL_DURATION_MS = 650 // más rápido y natural al clic en logo
@@ -41,7 +40,7 @@ const navItems = [
   { label: 'Propiedades', path: '/resultados' },
   { label: 'Nosotros', path: '/nosotros' },
   { label: 'Bolsa de trabajo', path: '/bolsa-de-trabajo' },
-  { label: 'Contacto', path: '#' },
+  { label: 'Contacto', path: '/contacto' },
 ]
 
 export default function Navbar() {
@@ -50,7 +49,6 @@ export default function Navbar() {
   const scrollToTopCancelRef = useRef(null)
   const location = useLocation()
   const { user, role, signOut } = useAuth()
-  const { openContactModal } = useContactModal()
   const isAdmin = user && role === 'admin'
 
   useEffect(() => {
@@ -132,14 +130,6 @@ export default function Navbar() {
                   >
                     {label}
                   </Link>
-                ) : label === 'Contacto' ? (
-                  <button
-                    type="button"
-                    onClick={openContactModal}
-                    className="text-sm font-medium tracking-wide text-gray-600 hover:text-accent transition-colors"
-                  >
-                    {label}
-                  </button>
                 ) : path.startsWith('/') ? (
                   <Link
                     to={path}
@@ -228,17 +218,6 @@ export default function Navbar() {
                     >
                       {label}
                     </Link>
-                  ) : label === 'Contacto' ? (
-                    <button
-                      type="button"
-                      className="block w-full text-left py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg"
-                      onClick={() => {
-                        setMobileOpen(false)
-                        openContactModal()
-                      }}
-                    >
-                      {label}
-                    </button>
                   ) : path.startsWith('/') ? (
                     <Link
                       to={path}

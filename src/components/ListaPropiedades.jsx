@@ -68,16 +68,24 @@ export default function ListaPropiedades({ propiedades = [], selectedId, onSelec
     )
   }
 
-  const handleCardClick = (propId, e) => {
-    // Al hacer clic en la tarjeta, centrar el mapa en esa propiedad
-    onSelect?.(propId)
+  const handleCardClick = (propId) => {
+    if (selectedId === propId) {
+      onSelect?.(null)
+      setTimeout(() => onSelect?.(propId), 50)
+    } else {
+      onSelect?.(propId)
+    }
   }
 
   const handleVerPropiedad = (propId, e) => {
     e.stopPropagation()
-    // Primero centrar en el mapa y mostrar el popup; el enlace "Ver propiedad" del popup lleva al detalle
-    onSelect?.(propId)
-    onFocusMap?.()
+    if (selectedId === propId) {
+      onSelect?.(null)
+      setTimeout(() => { onSelect?.(propId); onFocusMap?.() }, 50)
+    } else {
+      onSelect?.(propId)
+      onFocusMap?.()
+    }
   }
 
   return (

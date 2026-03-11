@@ -12,6 +12,8 @@ import DashboardPage from './pages/admin/DashboardPage'
 import AdminPropiedadesPage from './pages/admin/AdminPropiedadesPage'
 import CrearPropiedadPage from './pages/admin/CrearPropiedadPage'
 import EditarPropiedadPage from './pages/admin/EditarPropiedadPage'
+import AdminConsultasPage from './pages/admin/AdminConsultasPage'
+import ContactPage from './pages/ContactPage'
 
 function App() {
   return (
@@ -19,6 +21,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/nosotros" element={<NosotrosPage />} />
+        <Route path="/contacto" element={<ContactPage />} />
         <Route path="/bolsa-de-trabajo" element={<BolsaDeTrabajoPage />} />
         <Route path="/resultados" element={<ResultsPage />} />
         <Route path="/propiedad/:id" element={<PropiedadDetailPage />} />
@@ -29,6 +32,7 @@ function App() {
             <Route path="propiedades" element={<AdminPropiedadesPage />} />
             <Route path="crear" element={<CrearPropiedadPage />} />
             <Route path="editar/:id" element={<EditarPropiedadPage />} />
+            <Route path="consultas" element={<AdminConsultasPage />} />
           </Route>
         </Route>
       </Route>

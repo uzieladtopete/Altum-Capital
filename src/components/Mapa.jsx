@@ -122,10 +122,10 @@ export default function Mapa({ propiedades = [], selectedId = null, onSelect = n
       setViewCenter([Number(prop.lat), Number(prop.lng)])
       setViewZoom(14)
       setPopupInfo(prop)
-      const ref = markerRefs.current[prop.id]
-      if (ref?.leafletElement) {
-        setTimeout(() => ref.leafletElement.openPopup(), 100)
-      }
+      setTimeout(() => {
+        const marker = markerRefs.current[prop.id]
+        if (marker) marker.openPopup()
+      }, 300)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- propIdsKey evita re-runs por referencia de array
   }, [selectedId, propIdsKey])

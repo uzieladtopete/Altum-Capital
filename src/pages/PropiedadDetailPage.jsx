@@ -3,9 +3,9 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { usePropiedades } from '../context/PropiedadesContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { useContactModal } from '../context/ContactModalContext'
 import { getPropiedadById } from '../services/propiedadesSupabase'
 import { recordPropertyView } from '../services/propertyViewsSupabase'
+import { MapPin } from 'lucide-react'
 import ImagenPropiedad from '../components/ImagenPropiedad'
 import MapaPreview from '../components/MapaPreview'
 
@@ -25,7 +25,6 @@ export default function PropiedadDetailPage() {
   const { list, loading: propiedadesLoading, updatePropiedad: updatePropiedadContext } = usePropiedades()
   const { role } = useAuth()
   const { addToast } = useToast()
-  const { openContactModal } = useContactModal()
   const propiedadFromList = list.find((p) => p.id === id)
   const [propiedadFull, setPropiedadFull] = useState(null)
   const propiedad = propiedadFull ?? propiedadFromList
@@ -563,20 +562,18 @@ export default function PropiedadDetailPage() {
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={openContactModal}
-                  className="w-full px-6 py-4 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors text-lg"
+                <Link
+                  to="/contacto"
+                  className="w-full inline-flex justify-center px-6 py-4 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors text-lg"
                 >
                   Me interesa
-                </button>
-                <button
-                  type="button"
-                  onClick={openContactModal}
-                  className="w-full px-6 py-4 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-lg"
+                </Link>
+                <Link
+                  to="/contacto"
+                  className="w-full inline-flex justify-center px-6 py-4 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-lg"
                 >
                   Contactar
-                </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -1165,7 +1162,20 @@ export default function PropiedadDetailPage() {
 
       {/* Ubicación: dirección, coordenadas y mapa (solo lectura; para editar ubicación usar Panel Admin) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-100">
-        <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Ubicación</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="font-serif text-xl font-semibold text-gray-900">Ubicación</h2>
+          {coords && (
+            <a
+              href={`https://www.google.com/maps?q=${Number(propiedad.lat)},${Number(propiedad.lng)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              <MapPin className="w-4 h-4 text-gray-600" strokeWidth={2} />
+              Ver en Maps
+            </a>
+          )}
+        </div>
         {propiedad.direccion && (
           <p className="text-gray-700 mb-2">{propiedad.direccion}</p>
         )}
@@ -1207,20 +1217,18 @@ export default function PropiedadDetailPage() {
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 max-w-md">
           <h3 className="font-serif text-lg font-semibold text-gray-900 mb-4">¿Te interesa esta propiedad?</h3>
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={openContactModal}
-              className="px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            <Link
+              to="/contacto"
+              className="inline-flex justify-center px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >
               Me interesa
-            </button>
-            <button
-              type="button"
-              onClick={openContactModal}
-              className="px-6 py-3 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            </Link>
+            <Link
+              to="/contacto"
+              className="inline-flex justify-center px-6 py-3 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
             >
               Contactar
-            </button>
+            </Link>
           </div>
         </div>
       </div>

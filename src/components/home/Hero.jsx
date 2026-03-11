@@ -1,6 +1,10 @@
-import AnimateOnScroll from '../AnimateOnScroll'
+import { useNavigate } from 'react-router-dom'
+import { Hero as AnimatedHero } from '@/components/ui/animated-hero'
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button'
 
 export default function Hero() {
+  const navigate = useNavigate()
+
   return (
     <section className="relative w-full min-h-[85vh] flex items-center justify-center overflow-hidden">
       {/* Background image */}
@@ -12,18 +16,20 @@ export default function Hero() {
       />
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40" aria-hidden />
-      {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
-        <AnimateOnScroll direction="up" delay={0.1}>
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-white tracking-tight leading-tight">
-            Diseño que habita el espacio
-          </h1>
-        </AnimateOnScroll>
-        <AnimateOnScroll direction="up" delay={0.25}>
-          <p className="mt-6 text-lg sm:text-xl text-white/90 font-light max-w-2xl mx-auto">
-            Donde Las Oportunidades Alcanzan Su Punto Más Alto
-          </p>
-        </AnimateOnScroll>
+      {/* Animated hero content */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 text-center flex flex-col items-center">
+        <AnimatedHero
+          dark
+          titles={['espacio', 'momento', 'lugar', 'sueño', 'hogar']}
+          staticPrefix="Diseño que habita el "
+          lead="Donde las oportunidades alcanzan su punto más alto."
+        />
+        <InteractiveHoverButton
+          text="Ver propiedades"
+          light
+          onClick={() => navigate('/resultados')}
+          className="mt-4 w-44"
+        />
       </div>
     </section>
   )

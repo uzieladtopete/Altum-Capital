@@ -1,63 +1,78 @@
 import { useRef, useState, useEffect } from 'react'
+import { TrendingUp, BookOpen, Building2, Users, Clock, ShieldCheck } from 'lucide-react'
 import AnimateOnScroll from '../components/AnimateOnScroll'
+import RadialOrbitalTimeline from '../components/ui/radial-orbital-timeline'
+import TextReveal from '../components/ui/text-reveal'
 
 const EMAIL = 'contacto@altumcapital.com'
 const EMAIL_SUBJECT = 'Quiero ser agente Altum Capital'
 
-const beneficios = [
+const timelineBeneficios = [
   {
-    titulo: 'Ingresos sin techo',
-    descripcion: 'Tu esfuerzo define tus resultados. Sin límite de comisiones, sin techo de ingresos.',
-    icono: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    ),
+    id: 1,
+    title: 'Ingresos sin techo',
+    date: 'Core',
+    content: 'Tu esfuerzo define tus resultados. Sin límite de comisiones, sin techo de ingresos.',
+    category: 'Beneficio',
+    icon: TrendingUp,
+    relatedIds: [2, 6],
+    status: 'completed',
+    energy: 100,
   },
   {
-    titulo: 'Capacitación constante',
-    descripcion: 'Acceso a formación en ventas, mercado inmobiliario, finanzas y estrategia de cierre.',
-    icono: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
+    id: 2,
+    title: 'Capacitación',
+    date: 'Core',
+    content: 'Acceso a formación en ventas, mercado inmobiliario, finanzas y estrategia de cierre.',
+    category: 'Beneficio',
+    icon: BookOpen,
+    relatedIds: [1, 3],
+    status: 'completed',
+    energy: 95,
   },
   {
-    titulo: 'Cartera de propiedades',
-    descripcion: 'Trabaja con un portafolio sólido de propiedades en zonas de alta plusvalía y demanda real.',
-    icono: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    ),
+    id: 3,
+    title: 'Cartera de propiedades',
+    date: 'Core',
+    content: 'Trabaja con un portafolio sólido de propiedades en zonas de alta plusvalía y demanda real.',
+    category: 'Beneficio',
+    icon: Building2,
+    relatedIds: [2, 4],
+    status: 'completed',
+    energy: 90,
   },
   {
-    titulo: 'Equipo y cultura',
-    descripcion: 'Un equipo que comparte conocimiento, se apoya y celebra los logros juntos.',
-    icono: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
+    id: 4,
+    title: 'Equipo y cultura',
+    date: 'Core',
+    content: 'Un equipo que comparte conocimiento, se apoya y celebra los logros juntos.',
+    category: 'Beneficio',
+    icon: Users,
+    relatedIds: [3, 5],
+    status: 'in-progress',
+    energy: 85,
   },
   {
-    titulo: 'Flexibilidad real',
-    descripcion: 'Horarios que se adaptan a tu vida. Trabaja desde donde quieras con las herramientas que necesitas.',
-    icono: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
+    id: 5,
+    title: 'Flexibilidad real',
+    date: 'Core',
+    content: 'Horarios que se adaptan a tu vida. Trabaja desde donde quieras con las herramientas que necesitas.',
+    category: 'Beneficio',
+    icon: Clock,
+    relatedIds: [4, 6],
+    status: 'in-progress',
+    energy: 80,
   },
   {
-    titulo: 'Respaldo y herramientas',
-    descripcion: 'CRM, materiales de marketing, apoyo legal y acompañamiento en cada etapa del proceso de venta.',
-    icono: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12 12 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
+    id: 6,
+    title: 'Respaldo y herramientas',
+    date: 'Core',
+    content: 'CRM, materiales de marketing, apoyo legal y acompañamiento en cada etapa del proceso de venta.',
+    category: 'Beneficio',
+    icon: ShieldCheck,
+    relatedIds: [5, 1],
+    status: 'completed',
+    energy: 95,
   },
 ]
 
@@ -84,11 +99,12 @@ function HeroBolsa() {
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <div className={`nosotros-hero-inner transition-all duration-1000 ease-out ${mounted ? 'nosotros-hero-visible' : ''}`}>
           <p className="font-sans text-sm md:text-base tracking-[0.2em] uppercase text-white/70 mb-4">
-            Únete al equipo
+            Hazte agente de Altum Capital
           </p>
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-semibold text-white tracking-tight leading-tight">
-            Hazte agente de<br />Altum Capital
-          </h1>
+          <TextReveal
+            word="Únete al Equipo"
+            titleClassName="text-white"
+          />
           <div className={`mt-6 h-px w-20 mx-auto bg-white/40 transition-opacity duration-700 delay-300 ${mounted ? 'opacity-100' : 'opacity-0'}`} />
           <p className="mt-6 font-serif italic text-xl sm:text-2xl text-white/90 font-light max-w-xl mx-auto">
             "El éxito no espera, se construye"
@@ -142,34 +158,18 @@ export default function BolsaDeTrabajoPage() {
         </div>
       </section>
 
-      {/* Beneficios */}
+      {/* Beneficios — Radial Orbital Timeline */}
       <section className="py-16 md:py-24 bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimateOnScroll direction="up">
             <h2 className="font-serif text-3xl md:text-4xl font-semibold text-gray-900 text-center mb-2">
               ¿Qué obtienes al unirte?
             </h2>
-            <p className="text-gray-600 text-center max-w-xl mx-auto mb-14">
+            <p className="text-gray-600 text-center max-w-xl mx-auto mb-10">
               Más que un trabajo: una plataforma para construir tu carrera y tus ingresos.
             </p>
           </AnimateOnScroll>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {beneficios.map((b, i) => (
-              <AnimateOnScroll key={b.titulo} direction="up" delay={i * 0.08}>
-                <div className="group h-full p-7 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300">
-                  <span className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors duration-300 mb-5">
-                    {b.icono}
-                  </span>
-                  <h3 className="font-serif text-lg font-semibold text-gray-900 mb-2">
-                    {b.titulo}
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {b.descripcion}
-                  </p>
-                </div>
-              </AnimateOnScroll>
-            ))}
-          </div>
+          <RadialOrbitalTimeline timelineData={timelineBeneficios} />
         </div>
       </section>
 

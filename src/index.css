@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-50% - var(--gap) / 2)); }
+}
+
+.animate-marquee {
+  animation: marquee var(--duration, 40s) linear infinite;
+}
+
 :root {
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Source Sans 3", system-ui, sans-serif;
@@ -10,6 +19,25 @@
   --color-text-muted: #6b7280;
   --color-border: #e5e7eb;
   --color-accent: #1a1a1a;
+  /* shadcn-style tokens for UI components */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 9%;
+  --accent: 0 0% 10%;
+  --accent-foreground: 0 0% 98%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --sky-500: #0ea5e9;
 }
 
 body {
@@ -73,6 +101,57 @@ input:focus-visible {
 }
 .nosotros-hero-inner {
   transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Text reveal (cinematic) */
+@keyframes cinematic-reveal {
+  0% {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(40%) scale(1.1);
+  }
+  50% {
+    opacity: 0.7;
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.text-reveal-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.text-reveal-line {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.text-reveal-char {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(40%) scale(1.1) translateZ(0);
+  animation: cinematic-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(0.04s * var(--char-index));
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-reveal-char {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
 }
 
 /* Map: marcador minimalista */

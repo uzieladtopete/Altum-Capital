@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import AnimateOnScroll from '../components/AnimateOnScroll'
-import VisionPatrimonio from '../components/home/VisionPatrimonio'
-import { useContactModal } from '../context/ContactModalContext'
 
 // Hero con título que entra suave (sin depender de IntersectionObserver para el primer frame)
 function HeroNosotros() {
@@ -67,8 +66,6 @@ const pasos = [
 ]
 
 export default function NosotrosPage() {
-  const { openContactModal } = useContactModal()
-
   return (
     <div className="min-h-screen bg-white">
       <HeroNosotros />
@@ -86,9 +83,6 @@ export default function NosotrosPage() {
           </AnimateOnScroll>
         </div>
       </section>
-
-      {/* Visión estratégica / Patrimonio en ascenso */}
-      <VisionPatrimonio />
 
       {/* Pilares */}
       <section className="py-16 md:py-24 bg-gray-50 border-y border-gray-100">
@@ -168,13 +162,12 @@ export default function NosotrosPage() {
             <p className="text-white/90 text-lg mb-8">
               Cuéntanos qué buscas o qué quieres ofrecer. Te respondemos con opciones y un proceso claro, con seguridad y acompañamiento.
             </p>
-            <button
-              type="button"
-              onClick={openContactModal}
+            <Link
+              to="/contacto"
               className="inline-flex items-center px-8 py-4 bg-white text-accent font-medium rounded-lg hover:bg-gray-100 transition-colors"
             >
               Solicitar consulta
-            </button>
+            </Link>
           </div>
         </AnimateOnScroll>
       </section>

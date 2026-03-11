@@ -5,6 +5,7 @@ const sidebarItems = [
   { label: 'Dashboard', path: '/admin' },
   { label: 'Propiedades', path: '/admin/propiedades' },
   { label: 'Crear Propiedad', path: '/admin/crear' },
+  { label: 'Consultas', path: '/admin/consultas' },
 ]
 
 export default function AdminLayout() {

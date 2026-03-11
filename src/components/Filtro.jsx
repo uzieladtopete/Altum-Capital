@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AnimateOnScroll from './AnimateOnScroll'
+import { RippleButton } from './ui/ripple-button'
 
 const CIUDADES = [
   { value: '', label: 'Ciudad' },
@@ -229,12 +230,13 @@ export default function Filtro() {
               )}
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <button
+              <RippleButton
                 type="submit"
-                className="px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-accent-light transition-colors"
+                rippleColor="bg-white"
+                className="bg-gray-900 text-white hover:text-white h-12 px-6"
               >
                 Buscar
-              </button>
+              </RippleButton>
               <button
                 type="button"
                 onClick={handleClear}
