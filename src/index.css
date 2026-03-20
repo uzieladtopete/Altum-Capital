@@ -407,4 +407,86 @@ input:focus-visible {
   .no-print {
     display: none !important;
   }
+
+  /* Forzar impresión de fondos e imágenes */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Evitar que elementos fixed/sticky rompan el flujo de impresión */
+  header, .fixed, .sticky {
+    position: static !important;
+  }
+
+  /* Asegurar que las imágenes se muestren */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Evitar cortes en medio de secciones */
+  section, .rounded-2xl, .shadow-xl, .shadow-lg {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ajustar el padding-top que compensa la navbar fija */
+  main.flex-1 {
+    padding-top: 0 !important;
+  }
+
+  /* Marca de agua diagonal que se repite en cada página */
+  .print-watermark {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 180px,
+        rgba(0, 0, 0, 0.03) 180px,
+        rgba(0, 0, 0, 0.03) 181px
+      );
+    overflow: hidden;
+  }
+  .print-watermark::before {
+    content: 'ALTUM CAPITAL  •  altumcapital.com  •  ALTUM CAPITAL  •  altumcapital.com  •  ALTUM CAPITAL  •  altumcapital.com';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: rgba(0, 0, 0, 0.04);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .print-watermark::after {
+    content: 'ALTUM CAPITAL  •  altumcapital.com  •  ALTUM CAPITAL  •  altumcapital.com';
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: rgba(0, 0, 0, 0.035);
+    white-space: nowrap;
+    pointer-events: none;
+  }
 }

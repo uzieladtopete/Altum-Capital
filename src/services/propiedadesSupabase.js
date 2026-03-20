@@ -73,16 +73,76 @@ function mapFromDB(row) {
 
 const selectWithDetails = '*, detalles_prop(*)'
 
+function parseRange(str) {
+  if (!str || typeof str !== 'string') return {}
+  const [minStr, maxStr] = str.split('-')
+  const min = minStr ? Number(minStr) : undefined
+  const max = maxStr ? Number(maxStr) : undefined
+  return {
+    min: min != null && !Number.isNaN(min) ? min : undefined,
+    max: max != null && !Number.isNaN(max) ? max : undefined,
+  }
+}
+
 async function getPropiedadesWithDetails(filters) {
   let query = supabase.from(TABLE).select(selectWithDetails)
-  if (filters.ciudad) query = query.eq('ciudad', filters.ciudad)
+
+  // Legacy filters (backward-compat)
+  if (filters.ciudad) query = query.ilike('ciudad', `%${filters.ciudad}%`)
   if (filters.tipo) query = query.eq('tipo', filters.tipo)
   if (filters.minPrecio) query = query.gte('precio', Number(filters.minPrecio))
   if (filters.maxPrecio) query = query.lte('precio', Number(filters.maxPrecio))
   if (filters.minM2) query = query.gte('m2', Number(filters.minM2))
   if (filters.maxM2) query = query.lte('m2', Number(filters.maxM2))
+
+  // New filters
+  if (filters.operacion) query = query.eq('tipo', filters.operacion)
+  if (filters.tipoInmueble) query = query.eq('tipo_inmueble', filters.tipoInmueble)
+  if (filters.ubicacion) query = query.eq('ciudad', filters.ubicacion)
+
+  if (filters.precio) {
+    const { min, max } = parseRange(filters.precio)
+    if (min !== undefined) query = query.gte('precio', min)
+    if (max !== undefined) query = query.lte('precio', max)
+  }
+  if (filters.tamano) {
+    const { min, max } = parseRange(filters.tamano)
+    if (min !== undefined) query = query.gte('m2', min)
+    if (max !== undefined) query = query.lte('m2', max)
+  }
+
   const { data, error } = await query.order('created_at', { ascending: false })
-  return { data, error }
+
+  if (error) return { data, error }
+
+  // Client-side filtering for detalles_prop fields (recamaras, banos, estacionamientos)
+  let results = data || []
+  if (filters.cuartos) {
+    const min = Number(filters.cuartos)
+    results = results.filter((p) => {
+      const det = Array.isArray(p.detalles_prop) ? p.detalles_prop[0] : p.detalles_prop
+      const val = det?.recamaras
+      return val != null && Number(val) >= min
+    })
+  }
+  if (filters.banos) {
+    const min = Number(filters.banos)
+    results = results.filter((p) => {
+      const det = Array.isArray(p.detalles_prop) ? p.detalles_prop[0] : p.detalles_prop
+      const val = det?.banos
+      return val != null && Number(val) >= min
+    })
+  }
+  if (filters.estacionamientos) {
+    const min = Number(filters.estacionamientos)
+    results = results.filter((p) => {
+      const det = Array.isArray(p.detalles_prop) ? p.detalles_prop[0] : p.detalles_prop
+      const val = det?.estacionamientos
+      return val != null && Number(val) >= min
+    })
+  }
+
+  return { data: results, error: null }
 }
 
 export async function getPropiedades(filters = {}) {
@@ -90,12 +150,25 @@ export async function getPropiedades(filters = {}) {
   let { data, error } = await getPropiedadesWithDetails(filters)
   if (error) {
     let q = supabase.from(TABLE).select('*')
-    if (filters.ciudad) q = q.eq('ciudad', filters.ciudad)
+    if (filters.ciudad) q = q.ilike('ciudad', `%${filters.ciudad}%`)
     if (filters.tipo) q = q.eq('tipo', filters.tipo)
+    if (filters.operacion) q = q.eq('tipo', filters.operacion)
+    if (filters.tipoInmueble) q = q.eq('tipo_inmueble', filters.tipoInmueble)
+    if (filters.ubicacion) q = q.eq('ciudad', filters.ubicacion)
     if (filters.minPrecio) q = q.gte('precio', Number(filters.minPrecio))
     if (filters.maxPrecio) q = q.lte('precio', Number(filters.maxPrecio))
     if (filters.minM2) q = q.gte('m2', Number(filters.minM2))
     if (filters.maxM2) q = q.lte('m2', Number(filters.maxM2))
+    if (filters.precio) {
+      const { min, max } = parseRange(filters.precio)
+      if (min !== undefined) q = q.gte('precio', min)
+      if (max !== undefined) q = q.lte('precio', max)
+    }
+    if (filters.tamano) {
+      const { min, max } = parseRange(filters.tamano)
+      if (min !== undefined) q = q.gte('m2', min)
+      if (max !== undefined) q = q.lte('m2', max)
+    }
     const res = await q.order('created_at', { ascending: false })
     if (res.error) {
       console.error('Error fetching propiedades:', res.error)

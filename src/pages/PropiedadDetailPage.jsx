@@ -313,7 +313,20 @@ export default function PropiedadDetailPage() {
   // Si es Casa Providencia, mostrar diseño especial
   if (isCasaProvidencia && propiedad) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white relative">
+        {/* Logo + marca de agua solo al imprimir */}
+        <div className="hidden print:block px-8 pt-6 pb-4 border-b border-gray-200 mb-4">
+          <div className="flex items-center justify-between">
+            <img src="/logo_altum_full.png" alt="Altum Capital" className="h-16 w-auto" />
+            <div className="text-right text-xs text-gray-400">
+              <p className="font-medium text-gray-600">altum-capital.com.mx</p>
+              <p>Documento generado por Altum Capital</p>
+              <p>Todos los derechos reservados</p>
+            </div>
+          </div>
+        </div>
+        <div className="print-watermark hidden print:block fixed inset-0 pointer-events-none z-[9999]" aria-hidden="true" />
+
         {/* Botones de edición (solo admin) */}
         {isAdmin && (
           <div className="no-print fixed top-20 right-4 z-50 flex gap-2">
@@ -543,42 +556,14 @@ export default function PropiedadDetailPage() {
             </div>
           )}
 
-          {/* Sidebar de Contacto */}
-          <div className="mt-16 max-w-md mx-auto">
-            <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-lg">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-serif text-2xl font-semibold text-gray-900 mb-4 text-center">
-                    ¿Te interesa esta propiedad?
-                  </h3>
-                  <div className="space-y-3 text-sm text-center">
-                    <div>
-                      <span className="text-gray-500">Precio:</span>
-                      <p className="font-semibold text-gray-900">{formatPrecio(propiedad.precio)}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Superficie:</span>
-                      <p className="font-semibold text-gray-900">{propiedad.m2} m²</p>
-                    </div>
-                  </div>
-                </div>
-                <Link
-                  to="/contacto"
-                  className="w-full inline-flex justify-center px-6 py-4 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors text-lg"
-                >
-                  Me interesa
-                </Link>
-                <Link
-                  to="/contacto"
-                  className="w-full inline-flex justify-center px-6 py-4 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-lg"
-                >
-                  Contactar
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
+
+      {/* Footer solo al imprimir */}
+      <div className="hidden print:block border-t border-gray-200 mt-8 px-8 py-4 text-center text-xs text-gray-400">
+        <p>© {new Date().getFullYear()} Altum Capital — altumcapital.com — Todos los derechos reservados</p>
+        <p className="mt-1">Este documento es propiedad de Altum Capital. Queda prohibida su reproducción sin autorización.</p>
       </div>
+    </div>
     )
   }
 
@@ -725,7 +710,20 @@ export default function PropiedadDetailPage() {
 
   // Diseño estándar para otras propiedades: collage → precio/estado → descripción → especificaciones → amenidades → mapa
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {/* Logo + marca de agua solo al imprimir */}
+      <div className="hidden print:block px-8 pt-6 pb-4 border-b border-gray-200 mb-4">
+        <div className="flex items-center justify-between">
+          <img src="/logo_altum_full.png" alt="Altum Capital" className="h-16 w-auto" />
+          <div className="text-right text-xs text-gray-400">
+            <p className="font-medium text-gray-600">altum-capital.com.mx</p>
+            <p>Documento generado por Altum Capital</p>
+            <p>Todos los derechos reservados</p>
+          </div>
+        </div>
+      </div>
+      <div className="print-watermark hidden print:block fixed inset-0 pointer-events-none z-[9999]" aria-hidden="true" />
+
       {/* Botón Volver ARRIBA (siempre visible) */}
       <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
         <Link
@@ -1212,25 +1210,10 @@ export default function PropiedadDetailPage() {
         </Link>
       </div>
 
-      {/* Sidebar de contacto / Me interesa (abajo del contenido o sticky) */}
-      <div className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 max-w-md">
-          <h3 className="font-serif text-lg font-semibold text-gray-900 mb-4">¿Te interesa esta propiedad?</h3>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              to="/contacto"
-              className="inline-flex justify-center px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Me interesa
-            </Link>
-            <Link
-              to="/contacto"
-              className="inline-flex justify-center px-6 py-3 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Contactar
-            </Link>
-          </div>
-        </div>
+      {/* Footer solo al imprimir */}
+      <div className="hidden print:block border-t border-gray-200 mt-8 px-8 py-4 text-center text-xs text-gray-400">
+        <p>© {new Date().getFullYear()} Altum Capital — altumcapital.com — Todos los derechos reservados</p>
+        <p className="mt-1">Este documento es propiedad de Altum Capital. Queda prohibida su reproducción sin autorización.</p>
       </div>
     </div>
   )

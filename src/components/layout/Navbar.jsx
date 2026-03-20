@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
@@ -48,8 +48,18 @@ export default function Navbar() {
   const [atTop, setAtTop] = useState(true)
   const scrollToTopCancelRef = useRef(null)
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, role, signOut } = useAuth()
   const isAdmin = user && role === 'admin'
+
+  const scrollToContact = () => {
+    setMobileOpen(false)
+    if (location.pathname === '/resultados') {
+      navigate('/#contacto')
+    } else {
+      document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < SCROLL_THRESHOLD)
@@ -81,13 +91,12 @@ export default function Navbar() {
   }, [])
 
   return (
-    <header className="no-print fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+    <header className="no-print fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20 relative">
-          {/* Arriba del todo: solo logo. Al bajar: solo texto ALTUM CAPITAL. Ancho suficiente para que las letras no se salgan. */}
+        <div className={`flex items-center justify-between relative transition-all duration-300 ${atTop ? 'h-[72px] md:h-24' : 'h-[88px] md:h-[112px]'}`}>
           <Link
             to="/"
-            className="relative inline-flex items-center justify-center h-full min-w-[160px] md:min-w-[200px] overflow-hidden z-10"
+            className="relative inline-flex items-center justify-center h-full min-w-[160px] md:min-w-[200px] z-10"
             aria-label="Altum Capital - Inicio"
             onClick={(e) => {
               if (location.pathname === '/') {
@@ -102,19 +111,13 @@ export default function Navbar() {
               }
             }}
           >
-            <img
-              src="/logo_altum.png?v=nav3"
-              alt=""
-              className={`max-h-9 w-auto md:max-h-11 object-contain object-center transition-opacity duration-300 invert hue-rotate-[200deg] mix-blend-multiply ${atTop ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}
-              onError={(e) => {
-                e.target.style.display = 'none'
-              }}
-            />
-            <span
-              className={`font-serif text-sm md:text-base font-semibold text-gray-900 tracking-[0.15em] md:tracking-[0.2em] uppercase whitespace-nowrap transition-opacity duration-300 ${atTop ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}
-            >
-              ALTUM CAPITAL
-            </span>
+            <div className={`overflow-hidden transition-all duration-300 ease-out ${atTop ? 'max-h-[46px] md:max-h-[56px]' : 'max-h-[72px] md:max-h-[88px]'}`}>
+              <img
+                src="/logo_altum_full.png"
+                alt="Altum Capital"
+                className="-my-[5px] h-[72px] w-auto md:h-[88px]"
+              />
+            </div>
           </Link>
 
           {/* Desktop menu: centrado en la barra */}
@@ -130,6 +133,16 @@ export default function Navbar() {
                   >
                     {label}
                   </Link>
+                ) : label === 'Contacto' ? (
+                  <button
+                    type="button"
+                    onClick={scrollToContact}
+                    className={`text-sm font-medium tracking-wide transition-colors ${
+                      location.pathname === '/contacto' ? 'text-accent' : 'text-gray-600 hover:text-accent'
+                    }`}
+                  >
+                    {label}
+                  </button>
                 ) : path.startsWith('/') ? (
                   <Link
                     to={path}
@@ -218,6 +231,14 @@ export default function Navbar() {
                     >
                       {label}
                     </Link>
+                  ) : label === 'Contacto' ? (
+                    <button
+                      type="button"
+                      className="block w-full text-left py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                      onClick={scrollToContact}
+                    >
+                      {label}
+                    </button>
                   ) : path.startsWith('/') ? (
                     <Link
                       to={path}

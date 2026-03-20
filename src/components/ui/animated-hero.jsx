@@ -42,28 +42,28 @@ function Hero({
         <div className="flex gap-8 py-12 lg:py-20 items-center justify-center flex-col">
           <div className="flex gap-4 flex-col items-center">
             {/* Hidden measurer to compute the width of the longest word */}
-            <div ref={measureRef} aria-hidden="true" className="absolute overflow-hidden h-0 pointer-events-none font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tighter font-semibold whitespace-nowrap">
+            <div ref={measureRef} aria-hidden="true" className="absolute overflow-hidden h-0 pointer-events-none font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tighter font-semibold whitespace-nowrap">
               {titleList.map((title, i) => (
                 <span key={i} className="inline-block">{title}</span>
               ))}
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tighter text-center font-semibold whitespace-nowrap">
-              <span className={titleClass}>{staticPrefix}</span>
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tighter text-center font-semibold">
+              <span className={titleClass} style={{ whiteSpace: 'pre-line' }}>{staticPrefix}</span>
               <span
-                className="relative inline-block align-bottom overflow-hidden"
-                style={{ width: slotWidth > 0 ? slotWidth + 4 : 'auto', height: '1.15em', marginTop: -10, marginBottom: -10 }}
+                className="relative inline-flex align-bottom justify-center overflow-hidden text-center md:pb-[69px] md:pt-0"
+                style={{ width: slotWidth > 0 ? slotWidth + 6 : 'auto', height: '10px', marginTop: -8, marginBottom: -8 }}
               >
                 {titleList.map((title, index) => (
                   <motion.span
                     key={index}
                     className={`absolute left-0 top-0 font-semibold whitespace-nowrap ${textAccent}`}
-                    initial={{ opacity: 0, y: '-100%' }}
+                    initial={{ opacity: 0, y: -100 }}
                     transition={{ type: 'spring', stiffness: 50 }}
                     animate={
                       titleNumber === index
                         ? { y: 0, opacity: 1 }
-                        : { y: titleNumber > index ? '-150%' : '150%', opacity: 0 }
+                        : { y: titleNumber > index ? -150 : 150, opacity: 0 }
                     }
                   >
                     {title}

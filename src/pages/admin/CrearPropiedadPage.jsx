@@ -16,8 +16,9 @@ const CIUDADES = [
 ]
 
 const TIPOS = [
-  { value: 'Residencial', label: 'Residencial' },
-  { value: 'Comercial', label: 'Comercial' },
+  { value: 'Venta', label: 'Venta' },
+  { value: 'Renta', label: 'Renta' },
+  { value: 'Traspaso', label: 'Traspaso' },
 ]
 
 const ESTADOS = [
@@ -30,7 +31,7 @@ const initialForm = {
   titulo: '',
   ciudad: 'Guadalajara',
   zona: '',
-  tipo: 'Residencial',
+  tipo: 'Venta',
   precio: '',
   m2: '',
   estado: 'Disponible',

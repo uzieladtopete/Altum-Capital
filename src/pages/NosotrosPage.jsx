@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import AnimateOnScroll from '../components/AnimateOnScroll'
+import { useAuth } from '../context/AuthContext'
+import AdvisorAdminPanel from '../components/admin/AdvisorAdminPanel'
 
 // Hero con título que entra suave (sin depender de IntersectionObserver para el primer frame)
 function HeroNosotros() {
@@ -36,36 +37,32 @@ function HeroNosotros() {
 
 const pilares = [
   {
-    titulo: 'Seguridad',
-    descripcion: 'Verificamos documentación, legalidad y estado de cada propiedad. Trabajamos con transparencia para que tu inversión esté protegida.',
+    titulo: 'Integridad',
+    descripcion: 'Actuamos con honestidad y transparencia en cada operación.',
     icono: (
       <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12 12 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
     ),
   },
   {
-    titulo: 'Proceso claro',
-    descripcion: 'Sabrás en todo momento en qué etapa estás: búsqueda, visitas, oferta, papeles y cierre. Sin sorpresas ni trámites opacos.',
+    titulo: 'Profesionalismo',
+    descripcion: 'Brindamos asesoría con conocimiento, preparación y estrategia.',
     icono: (
-      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
     ),
   },
   {
-    titulo: 'Acompañamiento',
-    descripcion: 'Un asesor te guía de principio a fin: filtros según tu perfil, visitas, negociación y apoyo con notaría y crédito si lo necesitas.',
+    titulo: 'Visión de crecimiento',
+    descripcion: 'Buscamos oportunidades que realmente generen plusvalía y expansión.',
     icono: (
-      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+      <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
     ),
   },
 ]
 
-const pasos = [
-  { numero: '01', titulo: 'Consulta y perfil', texto: 'Platicamos contigo: tipo de propiedad, zona, presupuesto y uso (vivienda o inversión). Con eso afinamos la búsqueda desde el primer día.' },
-  { numero: '02', titulo: 'Búsqueda y visitas', texto: 'Te mostramos opciones que encajan con tu perfil. Coordinamos visitas y resolvemos dudas sobre cada propiedad y la zona.' },
-  { numero: '03', titulo: 'Oferta y negociación', texto: 'Te apoyamos en la oferta, el trato con el vendedor y la revisión de documentación para que todo quede en orden.' },
-  { numero: '04', titulo: 'Cierre y acompañamiento', texto: 'Te guiamos con notaría, escrituración y, si aplica, con crédito hipotecario. Estamos contigo hasta las llaves y después.' },
-]
-
 export default function NosotrosPage() {
+  const { role } = useAuth()
+  const isAdmin = role === 'admin'
+
   return (
     <div className="min-h-screen bg-white">
       <HeroNosotros />
@@ -92,7 +89,7 @@ export default function NosotrosPage() {
               Nuestros pilares
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto text-center mb-14">
-              Tres principios que guían cada operación: que te sientas seguro, informado y acompañado.
+              Los principios que guían cada operación.
             </p>
           </AnimateOnScroll>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -115,62 +112,14 @@ export default function NosotrosPage() {
         </div>
       </section>
 
-      {/* Cómo trabajamos (timeline alternado) */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimateOnScroll direction="up">
-            <h2 className="font-serif text-3xl md:text-4xl font-semibold text-accent mb-2 text-center">
-              Cómo trabajamos
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-center mb-16">
-              Desde la primera plática hasta la entrega de llaves: un camino ordenado y sin sorpresas.
-            </p>
-          </AnimateOnScroll>
-          <div className="space-y-12 md:space-y-16">
-            {pasos.map((paso, i) => (
-              <AnimateOnScroll
-                key={paso.numero}
-                direction={i % 2 === 0 ? 'left' : 'right'}
-                delay={i * 0.08}
-              >
-                <div className={`flex flex-col md:flex-row md:items-center gap-8 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
-                  <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-accent text-white flex items-center justify-center font-serif text-2xl font-semibold">
-                    {paso.numero}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-serif text-xl md:text-2xl font-semibold text-gray-900 mb-2">
-                      {paso.titulo}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {paso.texto}
-                    </p>
-                  </div>
-                </div>
-              </AnimateOnScroll>
-            ))}
+      {isAdmin && (
+        <section className="py-12 md:py-16 bg-white">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <AdvisorAdminPanel />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* CTA */}
-      <section className="py-16 md:py-24 bg-accent text-white">
-        <AnimateOnScroll direction="up">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="font-serif text-3xl md:text-4xl font-semibold mb-4">
-              Encuentra tu propiedad o vende la tuya
-            </h2>
-            <p className="text-white/90 text-lg mb-8">
-              Cuéntanos qué buscas o qué quieres ofrecer. Te respondemos con opciones y un proceso claro, con seguridad y acompañamiento.
-            </p>
-            <Link
-              to="/contacto"
-              className="inline-flex items-center px-8 py-4 bg-white text-accent font-medium rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              Solicitar consulta
-            </Link>
-          </div>
-        </AnimateOnScroll>
-      </section>
     </div>
   )
 }

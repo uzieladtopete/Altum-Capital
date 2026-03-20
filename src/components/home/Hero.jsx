@@ -20,8 +20,8 @@ export default function Hero() {
       <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 text-center flex flex-col items-center">
         <AnimatedHero
           dark
-          titles={['espacio', 'momento', 'lugar', 'sueño', 'hogar']}
-          staticPrefix="Diseño que habita el "
+          titles={['seguridad', 'solidez', 'garantía', 'certeza']}
+          staticPrefix={'Impulsando tu patrimonio\nconstruyendo '}
           lead="Donde las oportunidades alcanzan su punto más alto."
         />
         <InteractiveHoverButton

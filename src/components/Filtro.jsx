@@ -2,251 +2,280 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AnimateOnScroll from './AnimateOnScroll'
 import { RippleButton } from './ui/ripple-button'
+import {
+  Home,
+  MapPin,
+  DollarSign,
+  Ruler,
+  BedDouble,
+  Bath,
+  Car,
+} from 'lucide-react'
 
-const CIUDADES = [
-  { value: '', label: 'Ciudad' },
-  { value: 'Guadalajara', label: 'Guadalajara' },
-  { value: 'Zapopan', label: 'Zapopan' },
+const OPERACIONES = [
+  { value: '', label: 'Todas' },
+  { value: 'Venta', label: 'Venta' },
+  { value: 'Renta', label: 'Renta' },
+  { value: 'Traspaso', label: 'Traspaso' },
 ]
 
-const TIPOS = [
-  { value: '', label: 'Tipo de propiedad' },
-  { value: 'Residencial', label: 'Residencial' },
-  { value: 'Comercial', label: 'Comercial' },
+const TIPOS_INMUEBLE = [
+  { value: '', label: 'Tipo de Inmueble' },
+  { value: 'Casa', label: 'Casa' },
+  { value: 'Departamento', label: 'Departamento' },
+  { value: 'Terreno', label: 'Terreno' },
+  { value: 'Local Comercial', label: 'Local Comercial' },
+  { value: 'Oficina', label: 'Oficina' },
+  { value: 'Bodega', label: 'Bodega' },
+]
+
+const UBICACIONES = [
+  { value: '', label: 'Ubicación' },
+  { value: 'Zapopan', label: 'Zapopan' },
+  { value: 'Guadalajara', label: 'Guadalajara' },
+  { value: 'Tlajomulco', label: 'Tlajomulco' },
+  { value: 'Tonalá', label: 'Tonalá' },
+]
+
+const PRECIO_RANGOS = [
+  { value: '', label: 'Precio' },
+  { value: '0-500000', label: 'Hasta $500K' },
+  { value: '500000-1000000', label: '$500K – $1M' },
+  { value: '1000000-2000000', label: '$1M – $2M' },
+  { value: '2000000-5000000', label: '$2M – $5M' },
+  { value: '5000000-10000000', label: '$5M – $10M' },
+  { value: '10000000-', label: 'Más de $10M' },
+]
+
+const TAMANO_RANGOS = [
+  { value: '', label: 'Tamaño' },
+  { value: '0-100', label: 'Hasta 100 m²' },
+  { value: '100-200', label: '100 – 200 m²' },
+  { value: '200-500', label: '200 – 500 m²' },
+  { value: '500-1000', label: '500 – 1,000 m²' },
+  { value: '1000-', label: 'Más de 1,000 m²' },
+]
+
+const CUARTOS_OPCIONES = [
+  { value: '', label: 'Cuartos' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+  { value: '5', label: '5+' },
+]
+
+const BANOS_OPCIONES = [
+  { value: '', label: 'Baños' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4+' },
+]
+
+const ESTACIONAMIENTOS_OPCIONES = [
+  { value: '', label: 'Estacionamientos' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4+' },
 ]
 
 const initialFilters = {
-  ciudad: '',
-  tipo: '',
-  minPrecio: '',
-  maxPrecio: '',
-  minM2: '',
-  maxM2: '',
+  operacion: '',
+  tipoInmueble: '',
+  ubicacion: '',
+  precio: '',
+  tamano: '',
+  cuartos: '',
+  banos: '',
+  estacionamientos: '',
+}
+
+const selectClass =
+  'w-full pl-10 pr-10 py-3.5 border border-gray-200 rounded-full text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition appearance-none bg-[length:1rem_1rem] bg-[right_0.75rem_center] bg-no-repeat cursor-pointer text-sm'
+
+const chevronBg =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")"
+
+function IconSelect({ icon: Icon, value, onChange, options, label }) {
+  return (
+    <div className="relative">
+      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-accent pointer-events-none z-10" />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={selectClass}
+        style={{ backgroundImage: chevronBg }}
+        aria-label={label}
+      >
+        {options.map(({ value: v, label: l }) => (
+          <option key={v || 'all'} value={v}>
+            {l}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
 }
 
 export default function Filtro() {
   const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState(initialFilters)
-  const [presupuestoOpen, setPresupuestoOpen] = useState(false)
-  const [m2Open, setM2Open] = useState(false)
-  const presupuestoRef = useRef(null)
-  const m2Ref = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     setFilters({
-      ciudad: searchParams.get('ciudad') ?? '',
-      tipo: searchParams.get('tipo') ?? '',
-      minPrecio: searchParams.get('minPrecio') ?? '',
-      maxPrecio: searchParams.get('maxPrecio') ?? '',
-      minM2: searchParams.get('minM2') ?? '',
-      maxM2: searchParams.get('maxM2') ?? '',
+      operacion: searchParams.get('operacion') ?? '',
+      tipoInmueble: searchParams.get('tipoInmueble') ?? '',
+      ubicacion: searchParams.get('ubicacion') ?? '',
+      precio: searchParams.get('precio') ?? '',
+      tamano: searchParams.get('tamano') ?? '',
+      cuartos: searchParams.get('cuartos') ?? '',
+      banos: searchParams.get('banos') ?? '',
+      estacionamientos: searchParams.get('estacionamientos') ?? '',
     })
   }, [searchParams.toString()])
 
-  const handleChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }))
+  const set = (field, value) => applyFilter(field, value)
+
+  const buildUrl = (f) => {
+    const params = new URLSearchParams()
+    Object.entries(f).forEach(([key, value]) => {
+      if (value) params.set(key, value)
+    })
+    return `/resultados?${params.toString()}`
+  }
+
+  const applyFilter = (field, value) => {
+    const next = { ...filters, [field]: value }
+    setFilters(next)
+    navigate(buildUrl(next), { replace: true })
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value)
-    })
-    navigate(`/resultados?${params.toString()}`, { state: { filters } })
+    navigate(buildUrl(filters))
   }
 
   const handleClear = () => {
     setFilters(initialFilters)
-    setPresupuestoOpen(false)
-    setM2Open(false)
-  }
-
-  // Cerrar desplegables al hacer clic fuera
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (presupuestoRef.current && !presupuestoRef.current.contains(e.target)) {
-        setPresupuestoOpen(false)
-      }
-      if (m2Ref.current && !m2Ref.current.contains(e.target)) {
-        setM2Open(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const getPresupuestoLabel = () => {
-    if (filters.minPrecio && filters.maxPrecio) {
-      return `$${Number(filters.minPrecio).toLocaleString()} - $${Number(filters.maxPrecio).toLocaleString()}`
-    }
-    if (filters.minPrecio) return `Desde $${Number(filters.minPrecio).toLocaleString()}`
-    if (filters.maxPrecio) return `Hasta $${Number(filters.maxPrecio).toLocaleString()}`
-    return 'Presupuesto'
-  }
-
-  const getM2Label = () => {
-    if (filters.minM2 && filters.maxM2) {
-      return `${filters.minM2} - ${filters.maxM2} m²`
-    }
-    if (filters.minM2) return `Desde ${filters.minM2} m²`
-    if (filters.maxM2) return `Hasta ${filters.maxM2} m²`
-    return 'm²'
+    navigate(buildUrl(initialFilters), { replace: true })
   }
 
   return (
     <section className="bg-white border-b border-gray-100">
       <AnimateOnScroll direction="up">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-            <select
-              value={filters.ciudad}
-              onChange={(e) => handleChange('ciudad', e.target.value)}
-              className="w-full min-w-0 pl-4 pr-10 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition appearance-none bg-[length:1rem_1rem] bg-[right_0.75rem_center] bg-no-repeat cursor-pointer"
-              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")" }}
-              aria-label="Ciudad"
-            >
-              {CIUDADES.map(({ value, label }) => (
-                <option key={value || 'all'} value={value}>{label}</option>
-              ))}
-            </select>
-            <select
-              value={filters.tipo}
-              onChange={(e) => handleChange('tipo', e.target.value)}
-              className="w-full min-w-[11rem] pl-4 pr-10 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition appearance-none bg-[length:1rem_1rem] bg-[right_0.75rem_center] bg-no-repeat cursor-pointer"
-              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")" }}
-              aria-label="Tipo de propiedad"
-            >
-              {TIPOS.map(({ value, label }) => (
-                <option key={value || 'all'} value={value}>{label}</option>
-              ))}
-            </select>
-            
-            {/* Presupuesto desplegable */}
-            <div ref={presupuestoRef} className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setPresupuestoOpen(!presupuestoOpen)
-                  setM2Open(false)
-                }}
-                className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white text-left flex items-center justify-between transition ${
-                  presupuestoOpen ? 'ring-2 ring-accent/20 border-accent' : 'focus:ring-2 focus:ring-accent/20 focus:border-accent'
-                } ${filters.minPrecio || filters.maxPrecio ? 'font-medium' : ''}`}
-                aria-label="Presupuesto"
-              >
-                <span className="truncate">{getPresupuestoLabel()}</span>
-                <svg
-                  className={`w-4 h-4 ml-2 transition-transform ${presupuestoOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Operación (radio pills) */}
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              {OPERACIONES.map(({ value, label }) => (
+                <label
+                  key={value || 'todas'}
+                  className={`inline-flex items-center gap-2 cursor-pointer rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
+                    filters.operacion === value
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-accent/40'
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {presupuestoOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-2">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Desde</label>
-                    <input
-                      type="number"
-                      placeholder="Mínimo"
-                      value={filters.minPrecio}
-                      onChange={(e) => handleChange('minPrecio', e.target.value)}
-                      min="0"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Hasta</label>
-                    <input
-                      type="number"
-                      placeholder="Máximo"
-                      value={filters.maxPrecio}
-                      onChange={(e) => handleChange('maxPrecio', e.target.value)}
-                      min="0"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </div>
-              )}
+                  <input
+                    type="radio"
+                    name="operacion"
+                    value={value}
+                    checked={filters.operacion === value}
+                    onChange={() => set('operacion', value)}
+                    className="sr-only"
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
 
-            {/* m² desplegable */}
-            <div ref={m2Ref} className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setM2Open(!m2Open)
-                  setPresupuestoOpen(false)
-                }}
-                className={`w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white text-left flex items-center justify-between transition ${
-                  m2Open ? 'ring-2 ring-accent/20 border-accent' : 'focus:ring-2 focus:ring-accent/20 focus:border-accent'
-                } ${filters.minM2 || filters.maxM2 ? 'font-medium' : ''}`}
-                aria-label="Metros cuadrados"
-              >
-                <span className="truncate">{getM2Label()}</span>
-                <svg
-                  className={`w-4 h-4 ml-2 transition-transform ${m2Open ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {m2Open && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-2">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Desde</label>
-                    <input
-                      type="number"
-                      placeholder="Mínimo"
-                      value={filters.minM2}
-                      onChange={(e) => handleChange('minM2', e.target.value)}
-                      min="0"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Hasta</label>
-                    <input
-                      type="number"
-                      placeholder="Máximo"
-                      value={filters.maxM2}
-                      onChange={(e) => handleChange('maxM2', e.target.value)}
-                      min="0"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </div>
-              )}
+            {/* Tipo de Inmueble + Ubicación */}
+            <div className="grid grid-cols-2 gap-4">
+              <IconSelect
+                icon={Home}
+                value={filters.tipoInmueble}
+                onChange={(v) => set('tipoInmueble', v)}
+                options={TIPOS_INMUEBLE}
+                label="Tipo de Inmueble"
+              />
+              <IconSelect
+                icon={MapPin}
+                value={filters.ubicacion}
+                onChange={(v) => set('ubicacion', v)}
+                options={UBICACIONES}
+                label="Ubicación"
+              />
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
+
+            {/* Precio + Tamaño */}
+            <div className="grid grid-cols-2 gap-4">
+              <IconSelect
+                icon={DollarSign}
+                value={filters.precio}
+                onChange={(v) => set('precio', v)}
+                options={PRECIO_RANGOS}
+                label="Precio"
+              />
+              <IconSelect
+                icon={Ruler}
+                value={filters.tamano}
+                onChange={(v) => set('tamano', v)}
+                options={TAMANO_RANGOS}
+                label="Tamaño"
+              />
+            </div>
+
+            {/* Cuartos + Baños */}
+            <div className="grid grid-cols-2 gap-4">
+              <IconSelect
+                icon={BedDouble}
+                value={filters.cuartos}
+                onChange={(v) => set('cuartos', v)}
+                options={CUARTOS_OPCIONES}
+                label="Cuartos"
+              />
+              <IconSelect
+                icon={Bath}
+                value={filters.banos}
+                onChange={(v) => set('banos', v)}
+                options={BANOS_OPCIONES}
+                label="Baños"
+              />
+            </div>
+
+            {/* Estacionamientos */}
+            <div className="grid grid-cols-2 gap-4">
+              <IconSelect
+                icon={Car}
+                value={filters.estacionamientos}
+                onChange={(v) => set('estacionamientos', v)}
+                options={ESTACIONAMIENTOS_OPCIONES}
+                label="Estacionamientos"
+              />
+              <div />
+            </div>
+
+            {/* Botones */}
+            <div className="flex flex-col sm:flex-row gap-3">
               <RippleButton
                 type="submit"
                 rippleColor="bg-white"
-                className="bg-gray-900 text-white hover:text-white h-12 px-6"
+                className="flex-1 bg-accent text-white hover:text-white h-12 px-6 rounded-full font-medium"
               >
                 Buscar
               </RippleButton>
               <button
                 type="button"
                 onClick={handleClear}
-                className="px-6 py-3 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 border border-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors text-sm"
               >
                 Limpiar
               </button>
             </div>
-          </div>
-        </form>
+          </form>
         </div>
       </AnimateOnScroll>
     </section>

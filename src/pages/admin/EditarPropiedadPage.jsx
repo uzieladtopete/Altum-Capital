@@ -16,8 +16,12 @@ const CIUDADES = [
 ]
 
 const TIPOS = [
-  { value: 'Residencial', label: 'Residencial' },
-  { value: 'Comercial', label: 'Comercial' },
+  { value: 'Venta', label: 'Venta' },
+  { value: 'Renta', label: 'Renta' },
+  { value: 'Traspaso', label: 'Traspaso' },
+  // Compatibilidad para propiedades antiguas
+  { value: 'Residencial', label: 'Residencial (anterior)' },
+  { value: 'Comercial', label: 'Comercial (anterior)' },
 ]
 
 const ESTADOS = [
@@ -78,7 +82,7 @@ export default function EditarPropiedadPage() {
     titulo: '',
     ciudad: 'Guadalajara',
     zona: '',
-    tipo: 'Residencial',
+  tipo: 'Venta',
     precio: '',
     m2: '',
     estado: 'Disponible',
@@ -133,7 +137,7 @@ export default function EditarPropiedadPage() {
         titulo: prop.titulo ?? '',
         ciudad: prop.ciudad ?? 'Guadalajara',
         zona: prop.zona ?? '',
-        tipo: prop.tipo ?? 'Residencial',
+        tipo: prop.tipo ?? 'Venta',
         precio: prop.precio != null ? String(prop.precio) : '',
         m2: prop.m2 != null ? String(prop.m2) : '',
         estado: prop.estado ?? 'Disponible',

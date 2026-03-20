@@ -20,6 +20,14 @@ export default function ResultsPage() {
     maxPrecio: searchParams.get('maxPrecio') ?? '',
     minM2: searchParams.get('minM2') ?? '',
     maxM2: searchParams.get('maxM2') ?? '',
+    operacion: searchParams.get('operacion') ?? '',
+    tipoInmueble: searchParams.get('tipoInmueble') ?? '',
+    ubicacion: searchParams.get('ubicacion') ?? '',
+    precio: searchParams.get('precio') ?? '',
+    tamano: searchParams.get('tamano') ?? '',
+    cuartos: searchParams.get('cuartos') ?? '',
+    banos: searchParams.get('banos') ?? '',
+    estacionamientos: searchParams.get('estacionamientos') ?? '',
   }), [searchParams])
 
   // Cargar propiedades filtradas cuando cambian los filtros
@@ -46,8 +54,10 @@ export default function ResultsPage() {
       try {
         const filtered = await getFiltered(filters)
         if (!cancelled) {
+          // Si Supabase devuelve [], significa que no hay resultados para estos filtros.
+          // No debemos volver a filtrar en cliente con filtros "viejos", porque eso hace que aparezca todo.
           const next = Array.isArray(filtered) ? filtered : []
-          setPropiedades(next.length > 0 ? next : filterListClientSide(list, filters))
+          setPropiedades(next)
         }
       } catch (error) {
         console.error('Error loading propiedades:', error)
