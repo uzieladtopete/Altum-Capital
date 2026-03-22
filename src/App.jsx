@@ -14,29 +14,35 @@ import CrearPropiedadPage from './pages/admin/CrearPropiedadPage'
 import EditarPropiedadPage from './pages/admin/EditarPropiedadPage'
 import AdminConsultasPage from './pages/admin/AdminConsultasPage'
 import ContactPage from './pages/ContactPage'
+import AvisoPrivacidadPage from './pages/AvisoPrivacidadPage'
+import WhatsAppFloatButton from './components/WhatsAppFloatButton'
 
 function App() {
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/nosotros" element={<NosotrosPage />} />
-        <Route path="/contacto" element={<ContactPage />} />
-        <Route path="/bolsa-de-trabajo" element={<BolsaDeTrabajoPage />} />
-        <Route path="/resultados" element={<ResultsPage />} />
-        <Route path="/propiedad/:id" element={<PropiedadDetailPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin" element={<AdminRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="propiedades" element={<AdminPropiedadesPage />} />
-            <Route path="crear" element={<CrearPropiedadPage />} />
-            <Route path="editar/:id" element={<EditarPropiedadPage />} />
-            <Route path="consultas" element={<AdminConsultasPage />} />
+    <>
+      <WhatsAppFloatButton />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/nosotros" element={<NosotrosPage />} />
+          <Route path="/contacto" element={<ContactPage />} />
+          <Route path="/aviso-de-privacidad" element={<AvisoPrivacidadPage />} />
+          <Route path="/bolsa-de-trabajo" element={<BolsaDeTrabajoPage />} />
+          <Route path="/resultados" element={<ResultsPage />} />
+          <Route path="/propiedad/:id" element={<PropiedadDetailPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="propiedades" element={<AdminPropiedadesPage />} />
+              <Route path="crear" element={<CrearPropiedadPage />} />
+              <Route path="editar/:id" element={<EditarPropiedadPage />} />
+              <Route path="consultas" element={<AdminConsultasPage />} />
+            </Route>
           </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </>
   )
 }
 

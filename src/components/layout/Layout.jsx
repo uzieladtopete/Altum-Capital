@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import { TeamSection } from '../ui/team-section'
 import ContactSection from '../ContactSection'
+import SiteFooterBar from '../SiteFooterBar'
 
 export default function Layout() {
   const location = useLocation()
@@ -10,6 +11,10 @@ export default function Layout() {
   const isAdminPage = location.pathname.startsWith('/admin')
   const isHomePage = location.pathname === '/'
   const isBolsaDeTrabajoPage = location.pathname === '/bolsa-de-trabajo'
+  const isAvisoPrivacidadPage = location.pathname === '/aviso-de-privacidad'
+  const showFooterBar = !isAdminPage && location.pathname !== '/resultados'
+  /** En la página del aviso no repetimos equipo + contacto debajo del texto legal */
+  const showContactBlocks = showContact && !isAdminPage && !isAvisoPrivacidadPage
 
   useEffect(() => {
     if (location.hash === '#contacto' || location.hash === 'contacto') {
@@ -34,8 +39,9 @@ export default function Layout() {
       <main className="flex-1 pt-16 md:pt-20">
         <Outlet />
       </main>
-      {showContact && !isAdminPage && !isHomePage && !isBolsaDeTrabajoPage && <TeamSection />}
-      {showContact && !isAdminPage && <ContactSection />}
+      {showContactBlocks && !isHomePage && !isBolsaDeTrabajoPage && <TeamSection />}
+      {showContactBlocks && <ContactSection />}
+      {showFooterBar && <SiteFooterBar />}
     </div>
   )
 }

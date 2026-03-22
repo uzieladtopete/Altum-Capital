@@ -11,6 +11,29 @@
   animation: marquee var(--duration, 40s) linear infinite;
 }
 
+/* Botón flotante WhatsApp: respiración del logo (CSS global = siempre aplica) */
+@keyframes whatsapp-logo-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.11);
+  }
+}
+
+.whatsapp-logo-breathe {
+  animation: whatsapp-logo-breathe 5s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-logo-breathe {
+    animation: none;
+  }
+}
+
 :root {
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Source Sans 3", system-ui, sans-serif;

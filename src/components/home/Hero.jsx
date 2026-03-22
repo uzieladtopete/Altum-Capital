@@ -20,8 +20,9 @@ export default function Hero() {
       <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 text-center flex flex-col items-center">
         <AnimatedHero
           dark
-          titles={['seguridad', 'solidez', 'garantía', 'certeza']}
-          staticPrefix={'Impulsando tu patrimonio\nconstruyendo '}
+          titles={['seguridad', 'solidez', 'garantía', 'certeza', 'compromiso']}
+          headlineLine1="Impulsando tu patrimonio"
+          headlineLine2Prefix="construyendo "
           lead="Donde las oportunidades alcanzan su punto más alto."
         />
         <InteractiveHoverButton

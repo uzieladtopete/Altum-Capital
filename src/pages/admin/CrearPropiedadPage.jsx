@@ -9,6 +9,12 @@ import PropertyImageUploader from '../../components/PropertyImageUploader'
 import { insertPropertyImages } from '../../services/propertyImagesSupabase'
 import { getAmenidadesOpciones, upsertAmenidadesOpciones } from '../../services/amenidadesSupabase'
 import { AMENIDADES_OPCIONES } from '../../constants/amenidades'
+import { TIPOS_INMUEBLE_OPTIONS_ADMIN } from '../../constants/tipoInmueble'
+
+function parseM2(value) {
+  const n = parseFloat(String(value).trim().replace(',', '.'))
+  return Number.isFinite(n) ? n : NaN
+}
 
 const CIUDADES = [
   { value: 'Guadalajara', label: 'Guadalajara' },
@@ -32,6 +38,7 @@ const initialForm = {
   ciudad: 'Guadalajara',
   zona: '',
   tipo: 'Venta',
+  tipo_inmueble: '',
   precio: '',
   m2: '',
   estado: 'Disponible',
@@ -182,11 +189,15 @@ export default function CrearPropiedadPage() {
     e.preventDefault()
     const titulo = form.titulo.trim()
     const precio = Number(form.precio)
-    const m2 = Number(form.m2)
+    const m2 = parseM2(form.m2)
     const direccion = form.direccion.trim()
 
     if (!titulo) {
       addToast({ type: 'error', message: 'El título es obligatorio.' })
+      return
+    }
+    if (!form.tipo_inmueble?.trim()) {
+      addToast({ type: 'error', message: 'Selecciona el tipo de inmueble.' })
       return
     }
     if (Number.isNaN(precio) || precio < 0) {
@@ -194,7 +205,7 @@ export default function CrearPropiedadPage() {
       return
     }
     if (Number.isNaN(m2) || m2 <= 0) {
-      addToast({ type: 'error', message: 'Los m² deben ser un número mayor a 0.' })
+      addToast({ type: 'error', message: 'Los m² deben ser un número mayor a 0 (puedes usar decimales, ej. 120.5).' })
       return
     }
     const hasPortada = portadaImages?.length > 0
@@ -261,6 +272,7 @@ export default function CrearPropiedadPage() {
         ciudad: form.ciudad,
         zona: form.zona?.trim() || null,
         tipo: form.tipo,
+        tipo_inmueble: form.tipo_inmueble.trim(),
         precio,
         m2,
         lat: coords.lat,
@@ -367,6 +379,24 @@ export default function CrearPropiedadPage() {
             ))}
           </select>
         </div>
+        <div>
+          <label htmlFor="tipo_inmueble" className="block text-sm font-medium text-gray-700 mb-1">
+            Tipo de inmueble
+          </label>
+          <select
+            id="tipo_inmueble"
+            value={form.tipo_inmueble}
+            onChange={(e) => handleChange('tipo_inmueble', e.target.value)}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
+            required
+          >
+            {TIPOS_INMUEBLE_OPTIONS_ADMIN.map(({ value, label }) => (
+              <option key={value || 'empty'} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-1">
@@ -389,7 +419,9 @@ export default function CrearPropiedadPage() {
             <input
               id="m2"
               type="number"
-              min="1"
+              inputMode="decimal"
+              step="any"
+              min="0.01"
               value={form.m2}
               onChange={(e) => handleChange('m2', e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"

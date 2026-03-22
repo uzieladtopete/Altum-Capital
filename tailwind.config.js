@@ -10,8 +10,15 @@ export default {
         'shimmer-slide':
           'shimmer-slide var(--speed) ease-in-out infinite alternate',
         'spin-around': 'spin-around calc(var(--speed) * 2) infinite linear',
+        /** Aura del botón flotante WhatsApp (#293d51) — box-shadow para verla en fondos claros y oscuros */
+        'whatsapp-aura': 'whatsapp-aura 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
       },
       keyframes: {
+        'whatsapp-aura': {
+          '0%': { boxShadow: '0 0 0 0 rgba(41, 61, 81, 0.55)' },
+          '85%': { boxShadow: '0 0 0 16px rgba(41, 61, 81, 0.08)' },
+          '100%': { boxShadow: '0 0 0 20px rgba(41, 61, 81, 0)' },
+        },
         'spin-around': {
           '0%': { transform: 'translateZ(0) rotate(0)' },
           '15%, 35%': { transform: 'translateZ(0) rotate(90deg)' },

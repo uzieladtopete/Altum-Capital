@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AnimateOnScroll from './AnimateOnScroll'
 import { RippleButton } from './ui/ripple-button'
@@ -11,22 +11,13 @@ import {
   Bath,
   Car,
 } from 'lucide-react'
+import { TIPOS_INMUEBLE_OPTIONS_FILTRO } from '../constants/tipoInmueble'
 
 const OPERACIONES = [
   { value: '', label: 'Todas' },
   { value: 'Venta', label: 'Venta' },
   { value: 'Renta', label: 'Renta' },
   { value: 'Traspaso', label: 'Traspaso' },
-]
-
-const TIPOS_INMUEBLE = [
-  { value: '', label: 'Tipo de Inmueble' },
-  { value: 'Casa', label: 'Casa' },
-  { value: 'Departamento', label: 'Departamento' },
-  { value: 'Terreno', label: 'Terreno' },
-  { value: 'Local Comercial', label: 'Local Comercial' },
-  { value: 'Oficina', label: 'Oficina' },
-  { value: 'Bodega', label: 'Bodega' },
 ]
 
 const UBICACIONES = [
@@ -198,7 +189,7 @@ export default function Filtro() {
                 icon={Home}
                 value={filters.tipoInmueble}
                 onChange={(v) => set('tipoInmueble', v)}
-                options={TIPOS_INMUEBLE}
+                options={TIPOS_INMUEBLE_OPTIONS_FILTRO}
                 label="Tipo de Inmueble"
               />
               <IconSelect

@@ -39,6 +39,8 @@ export default function ResultsPage() {
       return items.filter((p) => {
         if (f.ciudad && (p.ciudad || '') !== f.ciudad) return false
         if (f.tipo && (p.tipo || '') !== f.tipo) return false
+        if (f.operacion && (p.tipo || '') !== f.operacion) return false
+        if (f.tipoInmueble && (p.tipo_inmueble || '') !== f.tipoInmueble) return false
         const precio = Number(p.precio)
         if (f.minPrecio && !Number.isNaN(precio) && precio < Number(f.minPrecio)) return false
         if (f.maxPrecio && !Number.isNaN(precio) && precio > Number(f.maxPrecio)) return false

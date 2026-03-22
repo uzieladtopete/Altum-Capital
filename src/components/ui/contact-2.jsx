@@ -1,9 +1,17 @@
 import { useState } from 'react'
+import { Mail, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+
+/** Genera href tel: a partir del número mostrado (solo dígitos). */
+function phoneToTelHref(phone) {
+  const digits = String(phone).replace(/\D/g, '')
+  if (!digits) return '#'
+  return `tel:+${digits}`
+}
 
 export function Contact2({
   title = 'Contáctanos',
@@ -46,17 +54,41 @@ export function Contact2({
               <h3 className="mb-6 text-center text-xl font-semibold lg:text-left">
                 Datos de contacto
               </h3>
-              <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
+              <ul className="flex flex-col gap-4 text-muted-foreground">
                 {phone && (
                   <li>
-                    <span className="font-bold text-foreground">Teléfono: </span>
-                    {phone}
+                    <a
+                      href={phoneToTelHref(phone)}
+                      className="group inline-flex max-w-full items-start gap-3 rounded-lg text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <Phone
+                        className="mt-0.5 h-5 w-5 shrink-0 text-foreground group-hover:text-accent"
+                        aria-hidden
+                      />
+                      <span>
+                        <span className="block font-semibold text-foreground group-hover:underline">
+                          Teléfono
+                        </span>
+                        <span className="text-sm">{phone}</span>
+                      </span>
+                    </a>
                   </li>
                 )}
                 <li>
-                  <span className="font-bold text-foreground">Email: </span>
-                  <a href={`mailto:${email}`} className="underline hover:text-foreground">
-                    {email}
+                  <a
+                    href={`mailto:${email}`}
+                    className="group inline-flex max-w-full items-start gap-3 rounded-lg text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <Mail
+                      className="mt-0.5 h-5 w-5 shrink-0 text-foreground group-hover:text-accent"
+                      aria-hidden
+                    />
+                    <span>
+                      <span className="block font-semibold text-foreground group-hover:underline">
+                        Email
+                      </span>
+                      <span className="break-all text-sm">{email}</span>
+                    </span>
                   </a>
                 </li>
                 {web?.url && (
@@ -97,7 +129,10 @@ export function Contact2({
               </div>
             </div>
             <div className="grid w-full items-center gap-1.5">
-              <Label htmlFor="contact-email">Email</Label>
+              <Label htmlFor="contact-email" className="inline-flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" aria-hidden />
+                Email
+              </Label>
               <Input
                 type="email"
                 id="contact-email"
@@ -107,7 +142,10 @@ export function Contact2({
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
-              <Label htmlFor="contact-telefono">Teléfono</Label>
+              <Label htmlFor="contact-telefono" className="inline-flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" aria-hidden />
+                Teléfono
+              </Label>
               <Input
                 type="tel"
                 id="contact-telefono"

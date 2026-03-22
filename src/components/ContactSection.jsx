@@ -3,6 +3,8 @@ import { Contact2 } from '@/components/ui/contact-2'
 import { insertConsulta } from '@/services/consultasSupabase'
 
 const EMAIL = 'contacto@altumcapital.com'
+/** Número para mostrar y para el enlace tel: (ajusta al número real de Altum). */
+const PHONE = '+52 33 1769 5263'
 
 export default function ContactSection() {
   const [loading, setLoading] = useState(false)
@@ -56,7 +58,7 @@ export default function ContactSection() {
       <Contact2
         title="Contáctanos"
         description="Estamos disponibles para dudas, comentarios o oportunidades de colaboración. Cuéntanos en qué podemos ayudarte."
-        phone=""
+        phone={PHONE}
         email={EMAIL}
         web={null}
         onSubmit={handleSubmit}
