@@ -18,7 +18,6 @@ import { NativeDelete } from '@/components/ui/delete-button'
 const EMPTY_FORM = {
   name: '',
   description: '',
-  location: '',
   phone: '',
   email: '',
   image_url: '',
@@ -76,13 +75,9 @@ function AdvisorForm({ initial, onSave, onCancel, saving }) {
           <Label htmlFor="adv-email">Correo electrónico</Label>
           <Input id="adv-email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="correo@ejemplo.com" />
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <Label htmlFor="adv-phone">Teléfono</Label>
           <Input id="adv-phone" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="33 1234 5678" />
-        </div>
-        <div>
-          <Label htmlFor="adv-location">Ubicación</Label>
-          <Input id="adv-location" value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="Guadalajara" />
         </div>
       </div>
 
@@ -236,7 +231,6 @@ export default function AdvisorAdminPanel() {
                     initial={{
                       name: adv.name || '',
                       description: adv.description || '',
-                      location: adv.location || '',
                       phone: adv.phone || '',
                       email: adv.email || '',
                       image_url: adv.image_url || '',
@@ -264,7 +258,7 @@ export default function AdvisorAdminPanel() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{adv.name}</p>
                     <p className="text-sm text-gray-500 truncate">
-                      {[adv.location, adv.email, adv.phone].filter(Boolean).join(' · ') || 'Sin datos adicionales'}
+                      {[adv.email, adv.phone].filter(Boolean).join(' · ') || 'Sin datos adicionales'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">

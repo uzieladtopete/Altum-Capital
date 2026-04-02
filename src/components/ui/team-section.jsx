@@ -13,19 +13,38 @@ const PLACEHOLDER_CARD = {
   role: '',
   bio: '',
   image: '/siguiente-asesora.png',
-  location: '',
   skills: [],
   social: {},
   isPlaceholder: true,
 }
 
+/** Compara sin acentos para detectar a la dueña. */
+function isJessicaHernandez(name) {
+  const n = String(name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+  return n.includes('jessica') && n.includes('hernandez')
+}
+
+function defaultRoleForRow(row) {
+  return isJessicaHernandez(row.name) ? 'Broker Associate' : 'Asesor inmobiliario'
+}
+
+/** Primera letra del nombre para avatar sin foto. */
+function advisorInitial(name) {
+  const t = String(name || '').trim()
+  if (!t) return '?'
+  const ch = [...t][0]
+  return ch ? ch.toUpperCase() : '?'
+}
+
 function dbRowToCard(row) {
   return {
     name: row.name || '',
-    role: 'Asesora Inmobiliaria',
+    role: defaultRoleForRow(row),
     bio: row.description || '',
-    image: row.image_url || '/jessica-asesora.png',
-    location: row.location || '',
+    image: (row.image_url || '').trim(),
     skills: ['Residencial', 'Comercial', 'Inversión'],
     social: {
       email: row.email || '',
@@ -67,9 +86,11 @@ function TeamMemberCard({ member }) {
       : null,
   ].filter(Boolean)
 
-  const imgSrc = member.image?.startsWith('http')
-    ? getOptimizedImageUrl(member.image, { width: 400 })
-    : member.image
+  const rawImage = (member.image || '').trim()
+  const hasPhoto = !member.isPlaceholder && !!rawImage
+  const imgSrc = rawImage.startsWith('http')
+    ? getOptimizedImageUrl(rawImage, { width: 400 })
+    : rawImage
 
   return (
     <div className="w-full max-w-[280px] h-full" style={{ perspective: 800 }}>
@@ -98,12 +119,22 @@ function TeamMemberCard({ member }) {
                   />
                 )}
                 <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-gray-100 bg-gray-50 p-1">
-                  <img
-                    src={imgSrc}
-                    alt={member.name || 'Próximo asesor'}
-                    className="h-full w-full rounded-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
+                  {member.isPlaceholder || hasPhoto ? (
+                    <img
+                      src={imgSrc}
+                      alt={member.name || 'Próximo asesor'}
+                      className="h-full w-full rounded-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-full w-full items-center justify-center rounded-full bg-accent/15 text-3xl font-bold text-accent transition-transform duration-300 group-hover:scale-105"
+                      role="img"
+                      aria-label={member.name ? `Inicial de ${member.name}` : 'Sin foto'}
+                    >
+                      {advisorInitial(member.name)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -116,7 +147,10 @@ function TeamMemberCard({ member }) {
               )}
 
               {member.role && (
-                <Badge variant="secondary" className="mb-2 justify-center bg-accent/10 text-xs uppercase tracking-[0.2em] text-accent">
+                <Badge
+                  variant="secondary"
+                  className="mb-2 justify-center bg-accent/10 text-xs sm:text-sm font-bold normal-case tracking-normal text-accent px-2 py-0.5"
+                >
                   {member.role}
                 </Badge>
               )}
@@ -134,22 +168,25 @@ function TeamMemberCard({ member }) {
               )}
 
               {!!socials.length && (
-                <div className="flex flex-col items-center gap-2 text-sm">
+                <div className="flex w-full min-w-0 flex-col items-center gap-2">
                   {socials.map((social) => (
                     <a
                       key={social.label}
                       href={social.href}
-                      className="text-gray-700 underline decoration-gray-300 underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
+                      title={social.label === 'Email' ? member.social?.email : undefined}
+                      className="max-w-full text-gray-700 underline decoration-gray-300 underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
                     >
                       {social.label === 'Teléfono' ? (
-                        <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-sm">
                           <Phone className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
                           {member.social?.phone}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5">
-                          <Mail className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-                          {member.social?.email}
+                        <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                          <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                          <span className="truncate text-[10px] sm:text-[11px] leading-tight">
+                            {member.social?.email}
+                          </span>
                         </span>
                       )}
                     </a>

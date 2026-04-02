@@ -10,7 +10,7 @@ export async function getTeamAdvisors() {
 
   const { data, error } = await supabase
     .from(TABLE)
-    .select('id, name, description, location, phone, email, image_url, created_at')
+    .select('id, name, description, phone, email, image_url, created_at')
     .order('created_at', { ascending: true })
 
   if (error) {
@@ -32,7 +32,6 @@ export async function createAdvisor(payload) {
     .insert({
       name: payload.name,
       description: payload.description || '',
-      location: payload.location || '',
       phone: payload.phone || '',
       email: payload.email || '',
       image_url: payload.image_url || '',
@@ -53,7 +52,6 @@ export async function updateAdvisor(id, payload) {
   const updates = {}
   if (payload.name !== undefined) updates.name = payload.name
   if (payload.description !== undefined) updates.description = payload.description
-  if (payload.location !== undefined) updates.location = payload.location
   if (payload.phone !== undefined) updates.phone = payload.phone
   if (payload.email !== undefined) updates.email = payload.email
   if (payload.image_url !== undefined) updates.image_url = payload.image_url
