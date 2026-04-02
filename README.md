@@ -28,3 +28,14 @@ Los filtros en la home redirigen a `/resultados` con los criterios; el filtrado 
 npm run build
 npm run preview
 ```
+
+## Variables de entorno (producción)
+
+Vite sustituye `import.meta.env.VITE_*` **en el momento del build**. Cualquier variable que uses en el código debe existir en el host (p. ej. Render → **Environment**) y volver a desplegar tras cambiarla.
+
+| Variable | Uso |
+|----------|-----|
+| `VITE_CLOUDINARY_CLOUD_NAME` | Subida de imágenes (crear/editar propiedad) |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | Preset unsigned de Cloudinary |
+
+Sin estas dos, en producción verás el error “Cloudinary no configurado” aunque en local funcione con `.env`.

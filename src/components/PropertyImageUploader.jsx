@@ -178,7 +178,7 @@ export default function PropertyImageUploader({
           >
             <div className="w-full aspect-[4/3] flex items-center justify-center p-2">
               {u.error ? (
-                <p className="text-sm text-red-600 text-center">{u.error}</p>
+                <p className="text-sm text-red-600 text-center break-words px-1 hyphens-auto">{u.error}</p>
               ) : (
                 <>
                   <div className="w-full bg-gray-200 rounded-full h-2">

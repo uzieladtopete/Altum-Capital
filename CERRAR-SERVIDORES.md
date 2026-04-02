@@ -2,7 +2,7 @@
 
 ## Opción 1: Usar el script que cierra el puerto y arranca (recomendado)
 
-En la terminal, desde esta carpeta:
+En la terminal, desde esta carpeta:}
 
 ```bash
 npm run dev:one

@@ -1,9 +1,8 @@
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { Mail, MapPin, Phone, Sparkles } from 'lucide-react'
+import { Mail, Phone, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEffect, useState, useCallback } from 'react'
 import { getTeamAdvisors, subscribeToAdvisors } from '@/services/teamAdvisorsSupabase'
@@ -122,13 +121,6 @@ function TeamMemberCard({ member }) {
                 </Badge>
               )}
 
-              {member.location && (
-                <div className="mb-3 flex items-center justify-center gap-1 text-xs text-gray-500">
-                  <MapPin className="h-3 w-3" aria-hidden />
-                  <span>{member.location}</span>
-                </div>
-              )}
-
               {member.bio && <p className="mb-4 text-sm text-gray-500">{member.bio}</p>}
 
               {!!member.skills?.length && (
@@ -142,13 +134,25 @@ function TeamMemberCard({ member }) {
               )}
 
               {!!socials.length && (
-                <div className="flex justify-center gap-2">
+                <div className="flex flex-col items-center gap-2 text-sm">
                   {socials.map((social) => (
-                    <Button key={social.label} asChild size="icon" variant="ghost" className="h-8 w-8 rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-accent/10 hover:text-accent hover:border-accent/30">
-                      <a href={social.href} aria-label={social.label}>
-                        <social.icon className="h-4 w-4" aria-hidden />
-                      </a>
-                    </Button>
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      className="text-gray-700 underline decoration-gray-300 underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
+                    >
+                      {social.label === 'Teléfono' ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Phone className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                          {member.social?.phone}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Mail className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                          {member.social?.email}
+                        </span>
+                      )}
+                    </a>
                   ))}
                 </div>
               )}

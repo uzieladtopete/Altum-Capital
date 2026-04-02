@@ -13,37 +13,46 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return
     }
-    // Verificar sesión al cargar
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadUserRole(session.user.id).catch((error) => {
-          console.error('Error loading user role on mount:', error)
+    // Verificar sesión al cargar (esperar rol antes de loading=false → badge admin fiable)
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          try {
+            await loadUserRole(session.user.id)
+          } catch (error) {
+            console.error('Error loading user role on mount:', error)
+            setRole('usuario')
+          }
+        } else {
           setRole('usuario')
-        })
-      } else {
-        setRole('usuario')
-      }
-      setLoading(false)
-    }).catch((error) => {
-      console.error('Error getting session:', error)
-      setLoading(false)
-    })
+        }
+        setLoading(false)
+      })
+      .catch((error) => {
+        console.error('Error getting session:', error)
+        setLoading(false)
+      })
 
     // Escuchar cambios de autenticación
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadUserRole(session.user.id).catch((error) => {
-          console.error('Error loading user role on auth change:', error)
+      void (async () => {
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          try {
+            await loadUserRole(session.user.id)
+          } catch (error) {
+            console.error('Error loading user role on auth change:', error)
+            setRole('usuario')
+          }
+        } else {
           setRole('usuario')
-        })
-      } else {
-        setRole('usuario')
-      }
-      setLoading(false)
+        }
+        setLoading(false)
+      })()
     })
 
     return () => subscription.unsubscribe()
@@ -61,25 +70,28 @@ export function AuthProvider({ children }) {
       let roleData = null
       
       for (const tableName of tableNames) {
-        try {
-          const { data, error } = await supabase
-            .from(tableName)
-            .select('role')
-            .eq('id', userId)
-            .single()
-          
-          if (data && !error) {
-            roleData = data
-            break
+        for (const keyCol of ['id', 'user_id']) {
+          try {
+            const { data, error } = await supabase
+              .from(tableName)
+              .select('role')
+              .eq(keyCol, userId)
+              .maybeSingle()
+
+            if (data && !error) {
+              roleData = data
+              break
+            }
+          } catch {
+            continue
           }
-        } catch (tableError) {
-          // Continuar con la siguiente tabla si esta falla
-          continue
         }
+        if (roleData) break
       }
-      
+
       if (roleData) {
-        setRole(roleData.role || 'usuario')
+        const raw = String(roleData.role || 'usuario').trim()
+        setRole(raw.toLowerCase() === 'admin' ? 'admin' : raw || 'usuario')
       } else {
         // Si no se encontró rol, usar 'usuario' por defecto
         setRole('usuario')

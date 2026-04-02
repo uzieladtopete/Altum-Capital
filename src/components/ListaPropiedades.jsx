@@ -1,4 +1,10 @@
+import { BedDouble, Bath, Car } from 'lucide-react'
 import ImagenPropiedad from './ImagenPropiedad'
+
+function safeCount(value) {
+  const n = value == null || value === '' ? NaN : Number(value)
+  return Number.isNaN(n) ? null : n
+}
 
 function formatPrecio(value) {
   return new Intl.NumberFormat('es-MX', {
@@ -22,6 +28,11 @@ function Card({ prop, selectedId, onCardClick, onVerPropiedad, compact = false }
         className="w-full text-left hover:border-gray-300 cursor-pointer"
       >
         <div className="aspect-[4/3] relative">
+          {prop.tipo ? (
+            <span className="absolute left-2 top-2 z-[1] max-w-[calc(100%-1rem)] rounded bg-black/75 px-2 py-0.5 text-[10px] font-semibold leading-tight text-white shadow-sm sm:text-xs">
+              {prop.tipo}
+            </span>
+          ) : null}
           <ImagenPropiedad
             src={prop.imagen}
             alt={prop.titulo}
@@ -29,18 +40,55 @@ function Card({ prop, selectedId, onCardClick, onVerPropiedad, compact = false }
           />
         </div>
         <div className={compact ? 'p-2' : 'p-3'}>
-          <h3 className={`font-serif font-semibold text-gray-900 truncate ${compact ? 'text-sm' : ''}`}>
+          <h3
+            className={`font-serif font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem] ${compact ? 'text-sm' : ''}`}
+          >
             {prop.titulo}
           </h3>
           <p className={compact ? 'text-xs text-gray-600' : 'text-sm text-gray-600'}>{prop.ciudad}</p>
-          <p className={`font-medium text-gray-900 mt-1 ${compact ? 'text-sm' : ''}`}>
+          <p className={`font-medium text-gray-900 mt-1 ${compact ? 'text-[17px]' : ''}`}>
             {formatPrecio(prop.precio)}
           </p>
-          <div className={`flex items-center justify-between mt-2 ${compact ? 'mt-1' : ''}`}>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+          <div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mt-2 ${compact ? 'mt-1' : ''}`}>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-gray-600 min-w-0">
+              {(() => {
+                const r = safeCount(prop.recamaras)
+                const b = safeCount(prop.banos)
+                const e = safeCount(prop.estacionamientos)
+                const parts = []
+                if (r != null) {
+                  parts.push(
+                    <span key="r" className={`inline-flex items-center gap-0.5 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+                      <BedDouble className={`shrink-0 opacity-80 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} aria-hidden />
+                      {r}
+                    </span>
+                  )
+                }
+                if (b != null) {
+                  parts.push(
+                    <span key="b" className={`inline-flex items-center gap-0.5 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+                      <Bath className={`shrink-0 opacity-80 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} aria-hidden />
+                      {b}
+                    </span>
+                  )
+                }
+                if (e != null) {
+                  parts.push(
+                    <span key="e" className={`inline-flex items-center gap-0.5 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+                      <Car className={`shrink-0 opacity-80 ${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} aria-hidden />
+                      {e}
+                    </span>
+                  )
+                }
+                return parts.length ? parts : null
+              })()}
+            </div>
+            <span className={`text-gray-500 shrink-0 font-medium ${compact ? 'text-[10px]' : 'text-xs'}`}>{prop.m2} m²</span>
+          </div>
+          <div className="mt-1">
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded inline-block">
               {prop.estado}
             </span>
-            <span className="text-xs text-gray-500">{prop.m2} m²</span>
           </div>
         </div>
       </button>

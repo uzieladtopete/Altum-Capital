@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AnimateOnScroll from './AnimateOnScroll'
 import { RippleButton } from './ui/ripple-button'
@@ -10,6 +10,7 @@ import {
   BedDouble,
   Bath,
   Car,
+  ChevronDown,
 } from 'lucide-react'
 import { TIPOS_INMUEBLE_OPTIONS_FILTRO } from '../constants/tipoInmueble'
 
@@ -26,16 +27,7 @@ const UBICACIONES = [
   { value: 'Guadalajara', label: 'Guadalajara' },
   { value: 'Tlajomulco', label: 'Tlajomulco' },
   { value: 'Tonalá', label: 'Tonalá' },
-]
-
-const PRECIO_RANGOS = [
-  { value: '', label: 'Precio' },
-  { value: '0-500000', label: 'Hasta $500K' },
-  { value: '500000-1000000', label: '$500K – $1M' },
-  { value: '1000000-2000000', label: '$1M – $2M' },
-  { value: '2000000-5000000', label: '$2M – $5M' },
-  { value: '5000000-10000000', label: '$5M – $10M' },
-  { value: '10000000-', label: 'Más de $10M' },
+  { value: 'Tlaquepaque', label: 'Tlaquepaque' },
 ]
 
 const TAMANO_RANGOS = [
@@ -48,7 +40,7 @@ const TAMANO_RANGOS = [
 ]
 
 const CUARTOS_OPCIONES = [
-  { value: '', label: 'Cuartos' },
+  { value: '', label: 'Recámaras' },
   { value: '1', label: '1' },
   { value: '2', label: '2' },
   { value: '3', label: '3' },
@@ -76,7 +68,8 @@ const initialFilters = {
   operacion: '',
   tipoInmueble: '',
   ubicacion: '',
-  precio: '',
+  minPrecio: '',
+  maxPrecio: '',
   tamano: '',
   cuartos: '',
   banos: '',
@@ -85,6 +78,12 @@ const initialFilters = {
 
 const selectClass =
   'w-full pl-10 pr-10 py-3.5 border border-gray-200 rounded-full text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition appearance-none bg-[length:1rem_1rem] bg-[right_0.75rem_center] bg-no-repeat cursor-pointer text-sm'
+
+const textInputClass =
+  'w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition text-sm placeholder:text-gray-400'
+
+const pricePopoverInputClass =
+  'w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-700 bg-white shadow-none focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition text-xs placeholder:text-gray-400'
 
 const chevronBg =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")"
@@ -110,9 +109,16 @@ function IconSelect({ icon: Icon, value, onChange, options, label }) {
   )
 }
 
+function digitsOnlyMoney(value) {
+  const d = String(value || '').replace(/[^\d]/g, '')
+  return d
+}
+
 export default function Filtro() {
   const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState(initialFilters)
+  const [priceOpen, setPriceOpen] = useState(false)
+  const priceWrapRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -120,19 +126,47 @@ export default function Filtro() {
       operacion: searchParams.get('operacion') ?? '',
       tipoInmueble: searchParams.get('tipoInmueble') ?? '',
       ubicacion: searchParams.get('ubicacion') ?? '',
-      precio: searchParams.get('precio') ?? '',
+      minPrecio: searchParams.get('minPrecio') ?? '',
+      maxPrecio: searchParams.get('maxPrecio') ?? '',
       tamano: searchParams.get('tamano') ?? '',
       cuartos: searchParams.get('cuartos') ?? '',
       banos: searchParams.get('banos') ?? '',
       estacionamientos: searchParams.get('estacionamientos') ?? '',
     })
+    const minP = searchParams.get('minPrecio')
+    const maxP = searchParams.get('maxPrecio')
+    if (minP || maxP) setPriceOpen(true)
   }, [searchParams.toString()])
+
+  useEffect(() => {
+    if (!priceOpen) return
+    const onDoc = (e) => {
+      const el = priceWrapRef.current
+      if (el && !el.contains(e.target)) setPriceOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [priceOpen])
+
+  const priceLabelSummary = (() => {
+    const dMin = digitsOnlyMoney(filters.minPrecio)
+    const dMax = digitsOnlyMoney(filters.maxPrecio)
+    if (dMin && dMax) return `Desde ${dMin} – Hasta ${dMax} MXN`
+    if (dMin) return `Desde ${dMin} MXN`
+    if (dMax) return `Hasta ${dMax} MXN`
+    return 'Rango de precio (MXN)'
+  })()
 
   const set = (field, value) => applyFilter(field, value)
 
   const buildUrl = (f) => {
     const params = new URLSearchParams()
-    Object.entries(f).forEach(([key, value]) => {
+    const fp = {
+      ...f,
+      minPrecio: digitsOnlyMoney(f.minPrecio),
+      maxPrecio: digitsOnlyMoney(f.maxPrecio),
+    }
+    Object.entries(fp).forEach(([key, value]) => {
       if (value) params.set(key, value)
     })
     return `/resultados?${params.toString()}`
@@ -201,15 +235,70 @@ export default function Filtro() {
               />
             </div>
 
-            {/* Precio + Tamaño */}
+            {/* Precio (1 columna) + Tamaño (1 columna); rango en popover compacto */}
             <div className="grid grid-cols-2 gap-4">
-              <IconSelect
-                icon={DollarSign}
-                value={filters.precio}
-                onChange={(v) => set('precio', v)}
-                options={PRECIO_RANGOS}
-                label="Precio"
-              />
+              <div ref={priceWrapRef} className="relative min-w-0">
+                <div
+                  className={`rounded-full border border-gray-200 bg-white shadow-none focus-within:ring-2 focus-within:ring-accent/20 focus-within:border-accent ${priceOpen ? 'ring-2 ring-accent/20 border-accent' : ''}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPriceOpen((o) => !o)}
+                    aria-expanded={priceOpen}
+                    aria-haspopup="dialog"
+                    className="relative w-full flex items-center gap-2 pl-10 pr-10 py-3.5 text-left text-sm text-gray-700 cursor-pointer hover:bg-gray-50/80 transition-colors rounded-full"
+                  >
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-accent pointer-events-none" />
+                    <span className="flex-1 truncate font-medium">{priceLabelSummary}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-gray-500 shrink-0 transition-transform ${priceOpen ? 'rotate-180' : ''}`}
+                      aria-hidden
+                    />
+                  </button>
+                </div>
+                {priceOpen ? (
+                  <div
+                    className="absolute z-50 top-[calc(100%+0.35rem)] left-0 w-full min-w-[200px] max-w-[min(100vw-2rem,320px)] rounded-xl border border-gray-200 bg-white shadow-lg p-3 space-y-2"
+                    role="dialog"
+                    aria-label="Rango de precio"
+                  >
+                    <div>
+                      <label htmlFor="filtro-precio-desde" className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-0.5">
+                        Desde
+                      </label>
+                      <input
+                        id="filtro-precio-desde"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="Mín. MXN"
+                        value={filters.minPrecio}
+                        onChange={(e) =>
+                          setFilters((prev) => ({ ...prev, minPrecio: e.target.value }))
+                        }
+                        className={pricePopoverInputClass}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="filtro-precio-hasta" className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-0.5">
+                        Hasta
+                      </label>
+                      <input
+                        id="filtro-precio-hasta"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="Máx. MXN"
+                        value={filters.maxPrecio}
+                        onChange={(e) =>
+                          setFilters((prev) => ({ ...prev, maxPrecio: e.target.value }))
+                        }
+                        className={pricePopoverInputClass}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <IconSelect
                 icon={Ruler}
                 value={filters.tamano}
@@ -219,14 +308,14 @@ export default function Filtro() {
               />
             </div>
 
-            {/* Cuartos + Baños */}
+            {/* Recámaras + Baños */}
             <div className="grid grid-cols-2 gap-4">
               <IconSelect
                 icon={BedDouble}
                 value={filters.cuartos}
                 onChange={(v) => set('cuartos', v)}
                 options={CUARTOS_OPCIONES}
-                label="Cuartos"
+                label="Recámaras"
               />
               <IconSelect
                 icon={Bath}

@@ -11,6 +11,20 @@
   animation: marquee var(--duration, 40s) linear infinite;
 }
 
+/* Tres tiras idénticas: el desplazamiento es exactamente un tercio del ancho total */
+@keyframes marqueeTriple {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% / 3));
+  }
+}
+
+.animate-marquee-triple {
+  animation: marqueeTriple var(--duration, 48s) linear infinite;
+}
+
 /* Botón flotante WhatsApp: respiración del logo (CSS global = siempre aplica) */
 @keyframes whatsapp-logo-breathe {
   0%,
@@ -233,54 +247,65 @@ input:focus-visible {
 .mapa-popup-content {
   font-family: var(--font-sans);
 }
+.mapa-popup-image-wrap {
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+}
 .mapa-popup-img {
   width: 100%;
-  height: 140px;
+  height: 128px;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+.mapa-popup-body {
+  padding: 10px 12px 12px;
 }
 .mapa-popup-title {
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #111;
   margin: 0;
-  padding: 12px 14px 0;
+  padding: 0;
 }
 .mapa-popup-precio {
-  font-weight: 600;
-  color: #374151;
-  margin: 4px 0 0;
-  padding: 0 14px;
-  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+.mapa-popup-stats-row {
+  margin-top: 8px;
 }
 .mapa-popup-m2 {
-  color: #6b7280;
+  color: #374151;
   font-size: 0.8rem;
-  margin: 2px 0 0;
-  padding: 0 14px;
+  margin: 0;
+  padding: 0;
 }
 .mapa-popup-estado {
   display: inline-block;
-  margin: 8px 14px 0;
-  margin-top: 4px;
-  margin-bottom: 4px;
-  padding: 2px 8px;
+  margin: 8px 0 0;
+  padding: 3px 8px;
   background: #f3f4f6;
   color: #4b5563;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   border-radius: 4px;
+  border: 1px solid #e5e7eb;
 }
 .mapa-popup-btn {
   display: block;
-  margin: 12px 14px 14px;
+  margin: 10px 0 0;
   padding: 8px 12px;
-  width: 220px;
-  height: 35px;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--color-accent);
   color: #fff;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   border-radius: 6px;
   text-decoration: none;
@@ -353,13 +378,13 @@ input:focus-visible {
   bottom: auto !important;
 }
 
-/* Asegurar que el botón central esté bien alineado */
-.mapa-popup-btn {
+/* Mapbox legacy: botón ancho completo dentro del popup */
+.mapboxgl-popup-content .mapa-popup-btn {
   text-align: center !important;
   display: block !important;
-  margin: 0 auto !important;
-  width: 220px !important;
-  height: 35px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-height: 36px !important;
 }
 
 .mapboxgl-popup-close-button {

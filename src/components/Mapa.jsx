@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { BedDouble, Bath, Car } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import ImagenPropiedad from './ImagenPropiedad'
 
@@ -48,6 +49,11 @@ function isInMexico(prop) {
     lng >= MEXICO_BOUNDS.minLng &&
     lng <= MEXICO_BOUNDS.maxLng
   )
+}
+
+function safeCount(value) {
+  const n = value == null || value === '' ? NaN : Number(value)
+  return Number.isNaN(n) ? null : n
 }
 
 function MapViewUpdater({ center, zoom }) {
@@ -188,29 +194,68 @@ export default function Mapa({ propiedades = [], selectedId = null, onSelect = n
               }}
               closeButton={true}
             >
-              <div className="mapa-popup-content w-[250px]" onClick={(e) => e.stopPropagation()}>
-                <ImagenPropiedad
-                  src={prop.imagen}
-                  alt={prop.titulo}
-                  className="mapa-popup-img w-full h-20 object-cover rounded-t-lg"
-                />
-                <div className="p-1.5">
-                  <h3 className="mapa-popup-title font-serif font-semibold text-gray-900 text-[9px] mb-0.5 leading-tight line-clamp-2">
+              <div className="mapa-popup-content w-[260px]" onClick={(e) => e.stopPropagation()}>
+                <div className="relative mapa-popup-image-wrap">
+                  {prop.tipo ? (
+                    <span className="mapa-popup-operacion absolute left-2 top-2 z-[1] max-w-[calc(100%-1rem)] rounded bg-black/75 px-2 py-1 text-xs font-semibold leading-tight text-white shadow-sm">
+                      {prop.tipo}
+                    </span>
+                  ) : null}
+                  <ImagenPropiedad
+                    src={prop.imagen}
+                    alt={prop.titulo}
+                    className="mapa-popup-img w-full object-cover"
+                  />
+                </div>
+                <div className="mapa-popup-body">
+                  <h3 className="mapa-popup-title font-serif font-semibold text-gray-900 leading-tight line-clamp-2">
                     {prop.titulo}
                   </h3>
-                  <p className="mapa-popup-precio font-semibold text-gray-900 text-[9px] mb-0.5">
+                  <p className="mapa-popup-precio font-bold text-gray-900">
                     {formatPrecio(prop.precio)}
                   </p>
-                  <div className="flex items-center justify-between mb-0.5">
-                    <p className="mapa-popup-m2 text-[8px] text-gray-600">{prop.m2} m²</p>
-                    <span className="mapa-popup-estado inline-block px-0.5 py-0 text-[7px] font-medium rounded border bg-gray-50 text-gray-700 border-gray-200">
+                  <div className="mapa-popup-stats-row flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <div className="mapa-popup-stats flex flex-wrap items-center gap-x-2 gap-y-0.5 text-gray-600">
+                      {(() => {
+                        const r = safeCount(prop.recamaras)
+                        const b = safeCount(prop.banos)
+                        const e = safeCount(prop.estacionamientos)
+                        const parts = []
+                        if (r != null) {
+                          parts.push(
+                            <span key="r" className="inline-flex items-center gap-0.5 text-xs">
+                              <BedDouble className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+                              {r}
+                            </span>
+                          )
+                        }
+                        if (b != null) {
+                          parts.push(
+                            <span key="b" className="inline-flex items-center gap-0.5 text-xs">
+                              <Bath className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+                              {b}
+                            </span>
+                          )
+                        }
+                        if (e != null) {
+                          parts.push(
+                            <span key="e" className="inline-flex items-center gap-0.5 text-xs">
+                              <Car className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+                              {e}
+                            </span>
+                          )
+                        }
+                        return parts.length ? parts : <span className="text-xs text-gray-400">—</span>
+                      })()}
+                    </div>
+                    <p className="mapa-popup-m2 shrink-0 text-xs font-medium text-gray-700">{prop.m2} m²</p>
+                  </div>
+                  {prop.estado ? (
+                    <span className="mapa-popup-estado inline-block text-xs font-medium">
                       {prop.estado}
                     </span>
-                  </div>
-                  <Link
-                    to={`/propiedad/${prop.id}`}
-                    className="mapa-popup-btn block w-full text-center px-1 py-0.5 bg-gray-900 text-white text-[7px] font-medium rounded hover:bg-gray-800 transition-colors"
-                  >
+                  ) : null}
+                  <Link to={`/propiedad/${prop.id}`} className="mapa-popup-btn">
                     Ver propiedad
                   </Link>
                 </div>

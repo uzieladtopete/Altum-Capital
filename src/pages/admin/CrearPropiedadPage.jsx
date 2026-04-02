@@ -16,9 +16,12 @@ function parseM2(value) {
   return Number.isFinite(n) ? n : NaN
 }
 
-const CIUDADES = [
-  { value: 'Guadalajara', label: 'Guadalajara' },
+const MUNICIPIOS = [
   { value: 'Zapopan', label: 'Zapopan' },
+  { value: 'Guadalajara', label: 'Guadalajara' },
+  { value: 'Tlajomulco', label: 'Tlajomulco' },
+  { value: 'Tonalá', label: 'Tonalá' },
+  { value: 'Tlaquepaque', label: 'Tlaquepaque' },
 ]
 
 const TIPOS = [
@@ -35,7 +38,7 @@ const ESTADOS = [
 
 const initialForm = {
   titulo: '',
-  ciudad: 'Guadalajara',
+  ciudad: 'Zapopan',
   zona: '',
   tipo: 'Venta',
   tipo_inmueble: '',
@@ -196,10 +199,6 @@ export default function CrearPropiedadPage() {
       addToast({ type: 'error', message: 'El título es obligatorio.' })
       return
     }
-    if (!form.tipo_inmueble?.trim()) {
-      addToast({ type: 'error', message: 'Selecciona el tipo de inmueble.' })
-      return
-    }
     if (Number.isNaN(precio) || precio < 0) {
       addToast({ type: 'error', message: 'Precio debe ser un número válido.' })
       return
@@ -272,7 +271,7 @@ export default function CrearPropiedadPage() {
         ciudad: form.ciudad,
         zona: form.zona?.trim() || null,
         tipo: form.tipo,
-        tipo_inmueble: form.tipo_inmueble.trim(),
+        tipo_inmueble: form.tipo_inmueble?.trim() || null,
         precio,
         m2,
         lat: coords.lat,
@@ -338,7 +337,7 @@ export default function CrearPropiedadPage() {
         </div>
         <div>
           <label htmlFor="ciudad" className="block text-sm font-medium text-gray-700 mb-1">
-            Ciudad
+            Municipio
           </label>
           <select
             id="ciudad"
@@ -346,14 +345,14 @@ export default function CrearPropiedadPage() {
             onChange={(e) => handleChange('ciudad', e.target.value)}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
           >
-            {CIUDADES.map(({ value, label }) => (
+            {MUNICIPIOS.map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="zona" className="block text-sm font-medium text-gray-700 mb-1">
-            Zona
+            Fraccionamiento
           </label>
           <input
             id="zona"
@@ -388,7 +387,6 @@ export default function CrearPropiedadPage() {
             value={form.tipo_inmueble}
             onChange={(e) => handleChange('tipo_inmueble', e.target.value)}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-            required
           >
             {TIPOS_INMUEBLE_OPTIONS_ADMIN.map(({ value, label }) => (
               <option key={value || 'empty'} value={value}>

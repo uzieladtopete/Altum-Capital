@@ -26,7 +26,7 @@ export default function AdminRoute() {
   }
 
   // Si hay usuario pero no es admin, mostrar mensaje de acceso restringido
-  if (role !== 'admin') {
+  if (String(role).toLowerCase() !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">

@@ -17,7 +17,7 @@ export function Contact2({
   title = 'Contáctanos',
   description = 'Estamos disponibles para dudas, comentarios o oportunidades de colaboración. Cuéntanos en qué podemos ayudarte.',
   phone = '',
-  email = 'contacto@altumcapital.com',
+  email = 'contacto@altum-capital.com.mx',
   web = null,
   className = '',
   onSubmit,
@@ -43,64 +43,59 @@ export function Contact2({
     <section className={cn('py-16 md:py-24', className)}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-6xl flex-col justify-between gap-12 lg:flex-row lg:gap-20">
-          <div className="mx-auto flex max-w-sm flex-col justify-between gap-10 lg:mx-0">
+          <div className="mx-auto flex max-w-sm flex-col gap-8 lg:mx-0">
             <div className="text-center lg:text-left">
               <h1 className="font-serif mb-2 text-4xl font-semibold sm:text-5xl lg:mb-1 lg:text-5xl">
                 {title}
               </h1>
               <p className="text-muted-foreground">{description}</p>
             </div>
-            <div className="mx-auto w-fit lg:mx-0">
-              <h3 className="mb-6 text-center text-xl font-semibold lg:text-left">
-                Datos de contacto
-              </h3>
-              <ul className="flex flex-col gap-4 text-muted-foreground">
-                {phone && (
-                  <li>
-                    <a
-                      href={phoneToTelHref(phone)}
-                      className="group inline-flex max-w-full items-start gap-3 rounded-lg text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    >
-                      <Phone
-                        className="mt-0.5 h-5 w-5 shrink-0 text-foreground group-hover:text-accent"
-                        aria-hidden
-                      />
-                      <span>
-                        <span className="block font-semibold text-foreground group-hover:underline">
-                          Teléfono
-                        </span>
-                        <span className="text-sm">{phone}</span>
-                      </span>
-                    </a>
-                  </li>
-                )}
+            <ul className="mx-auto flex w-full max-w-sm flex-col gap-4 text-muted-foreground lg:mx-0">
+              {phone && (
                 <li>
                   <a
-                    href={`mailto:${email}`}
+                    href={phoneToTelHref(phone)}
                     className="group inline-flex max-w-full items-start gap-3 rounded-lg text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    <Mail
+                    <Phone
                       className="mt-0.5 h-5 w-5 shrink-0 text-foreground group-hover:text-accent"
                       aria-hidden
                     />
                     <span>
                       <span className="block font-semibold text-foreground group-hover:underline">
-                        Email
+                        Teléfono
                       </span>
-                      <span className="break-all text-sm">{email}</span>
+                      <span className="text-sm">{phone}</span>
                     </span>
                   </a>
                 </li>
-                {web?.url && (
-                  <li>
-                    <span className="font-bold text-foreground">Web: </span>
-                    <a href={web.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
-                      {web.label || web.url}
-                    </a>
-                  </li>
-                )}
-              </ul>
-            </div>
+              )}
+              <li>
+                <a
+                  href={`mailto:${email}`}
+                  className="group inline-flex max-w-full items-start gap-3 rounded-lg text-left transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <Mail
+                    className="mt-0.5 h-5 w-5 shrink-0 text-foreground group-hover:text-accent"
+                    aria-hidden
+                  />
+                  <span>
+                    <span className="block font-semibold text-foreground group-hover:underline">
+                      Email
+                    </span>
+                    <span className="break-all text-sm">{email}</span>
+                  </span>
+                </a>
+              </li>
+              {web?.url && (
+                <li>
+                  <span className="font-bold text-foreground">Web: </span>
+                  <a href={web.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                    {web.label || web.url}
+                  </a>
+                </li>
+              )}
+            </ul>
           </div>
           <form
             onSubmit={handleSubmit}

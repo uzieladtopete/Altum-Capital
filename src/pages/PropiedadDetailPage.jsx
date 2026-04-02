@@ -18,6 +18,39 @@ function formatPrecio(value) {
   }).format(value)
 }
 
+/** Entero ≥ 0 desde la BD; null/undefined/'' → no mostrar fila (no inventar defaults). */
+function parseSpecCount(raw) {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.floor(n)
+}
+
+/** m² con decimales permitidos. */
+function parseM2(raw) {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = Number(raw)
+  return Number.isFinite(n) && n >= 0 ? n : null
+}
+
+/** Año de construcción razonable. */
+function parseYear(raw) {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return null
+  const y = Math.trunc(n)
+  if (y < 1700 || y > new Date().getFullYear() + 2) return null
+  return y
+}
+
+/** Número de piso (0 = planta baja válida). */
+function parsePiso(raw) {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.trunc(n)
+}
+
 export default function PropiedadDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -567,35 +600,19 @@ export default function PropiedadDetailPage() {
     )
   }
 
-  // Especificaciones: datos reales o ejemplos para mostrar debajo del precio (recámaras, baños, etc.)
-  const recamaras = propiedad.recamaras ?? propiedad.recámaras ?? 2
-  const banos = propiedad.banos ?? propiedad.baños ?? 1
-  const estacionamientos = propiedad.estacionamientos ?? 1
-  const anioConstruccion = propiedad.anio_construccion ?? propiedad.anioConstruccion ?? 2020
-  const piso = propiedad.piso ?? 7
+  const recamaras = parseSpecCount(propiedad.recamaras ?? propiedad.recámaras)
+  const banos = parseSpecCount(propiedad.banos ?? propiedad.baños)
+  const estacionamientos = parseSpecCount(propiedad.estacionamientos)
+  const anioConstruccion = parseYear(propiedad.anio_construccion ?? propiedad.anioConstruccion)
+  const piso = parsePiso(propiedad.piso)
+  const m2Num = parseM2(propiedad.m2)
+  const tipoStr = String(propiedad.tipo || '')
+  const m2Suffix = /terreno|lote\b/i.test(tipoStr) ? '' : ' de construcción'
+
   const amenidades = propiedad.amenidades ?? {}
   const amenidadesGeneral = Array.isArray(amenidades.general) ? amenidades.general : []
   const amenidadesPoliticas = Array.isArray(amenidades.politicas) ? amenidades.politicas : []
   const amenidadesRecreacion = Array.isArray(amenidades.recreacion) ? amenidades.recreacion : []
-
-  // Amenidades de ejemplo (cuando no hay datos), con iconos como en la referencia
-  const amenidadesEjemploGeneral = [
-    { label: 'Accesibilidad para adultos mayores', icon: 'accesibilidad' },
-    { label: 'Portero', icon: 'portero' },
-    { label: 'Cocina integral', icon: 'cocina' },
-    { label: 'Seguridad 24 horas', icon: 'seguridad' },
-    { label: 'Elevador', icon: 'elevador' },
-  ]
-  const amenidadesEjemploPoliticas = [
-    { label: 'Mascotas permitidas', icon: 'mascotas' },
-  ]
-  const amenidadesEjemploRecreacion = [
-    { label: 'Alberca', icon: 'alberca' },
-    { label: 'Salón de usos múltiples', icon: 'salon' },
-    { label: 'Área de juegos infantiles', icon: 'juegos' },
-    { label: 'Gimnasio', icon: 'gimnasio' },
-  ]
-  const usarAmenidadesEjemplo = amenidadesGeneral.length === 0 && amenidadesPoliticas.length === 0 && amenidadesRecreacion.length === 0
 
   const saveDetailOverride = async () => {
     localStorage.setItem(STORAGE_KEY_DETAIL, JSON.stringify(editOverride))
@@ -706,7 +723,10 @@ export default function PropiedadDetailPage() {
     politicas: editOverride.amenidades.politicas.length > 0 ? editOverride.amenidades.politicas : amenidadesPoliticas,
     recreacion: editOverride.amenidades.recreacion.length > 0 ? editOverride.amenidades.recreacion : amenidadesRecreacion,
   }
-  const usarAmenidadesEditadas = editOverride.amenidades.general.length > 0 || editOverride.amenidades.politicas.length > 0 || editOverride.amenidades.recreacion.length > 0
+  const totalAmenidadesMostradas =
+    amenidadesMostradas.general.length +
+    amenidadesMostradas.politicas.length +
+    amenidadesMostradas.recreacion.length
 
   // Diseño estándar para otras propiedades: collage → precio/estado → descripción → especificaciones → amenidades → mapa
   return (
@@ -844,12 +864,12 @@ export default function PropiedadDetailPage() {
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 rounded-xl overflow-hidden bg-gray-100">
-          <div className="md:col-span-2 aspect-[4/3] md:aspect-auto md:min-h-[320px]">
+          <div className="md:col-span-2 aspect-[4/3] min-h-0 overflow-hidden">
             {imagenesParaGridMostrado[0] ? (
               <ImagenPropiedad
                 src={imagenesParaGridMostrado[0]}
                 alt={tituloMostrado}
-                className="w-full h-full object-cover"
+                className="w-full h-full min-h-[200px] md:min-h-0 object-cover object-center"
               />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">Sin imagen</div>
@@ -961,44 +981,64 @@ export default function PropiedadDetailPage() {
           {propiedad.tipo} en {[propiedad.zona, propiedad.ciudad].filter(Boolean).join(', ')}
         </p>
 
-        {/* Especificaciones con iconos (debajo del precio), estilo referencia */}
+        {/* Especificaciones: solo datos guardados en Supabase (terrenos sin recámaras, etc.) */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4 text-gray-800">
-          <div className="flex items-center gap-3">
-            <span className="text-gray-600 shrink-0" aria-hidden>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11v2m0 5.5v2m0-5.5V19m0-5.5a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-5.5 0h2m-5.5 0H9" /></svg>
-            </span>
-            <span>{recamaras} recámara{recamaras !== 1 ? 's' : ''}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-600 shrink-0" aria-hidden>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
-            </span>
-            <span>{banos} baño{banos !== 1 ? 's' : ''}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-600 shrink-0" aria-hidden>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-            </span>
-            <span>{estacionamientos} estacionamiento{estacionamientos !== 1 ? 's' : ''}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-600 shrink-0" aria-hidden>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-            </span>
-            <span>{propiedad.m2} m² de construcción</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-600 shrink-0" aria-hidden>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            </span>
-            <span>Año de construcción: {anioConstruccion}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-600 shrink-0" aria-hidden>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-            </span>
-            <span>Piso: {piso}</span>
-          </div>
+          {recamaras != null && (
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 shrink-0" aria-hidden>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11v2m0 5.5v2m0-5.5V19m0-5.5a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-5.5 0h2m-5.5 0H9" /></svg>
+              </span>
+              <span>
+                {recamaras} recámara{recamaras !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+          {banos != null && (
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 shrink-0" aria-hidden>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+              </span>
+              <span>
+                {banos} baño{banos !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+          {estacionamientos != null && (
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 shrink-0" aria-hidden>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+              </span>
+              <span>
+                {estacionamientos} estacionamiento{estacionamientos !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+          {m2Num != null && (
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 shrink-0" aria-hidden>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+              </span>
+              <span>
+                {Number.isInteger(m2Num) ? m2Num : m2Num.toLocaleString('es-MX', { maximumFractionDigits: 2 })} m²{m2Suffix}
+              </span>
+            </div>
+          )}
+          {anioConstruccion != null && (
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 shrink-0" aria-hidden>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              </span>
+              <span>Año de construcción: {anioConstruccion}</span>
+            </div>
+          )}
+          {piso != null && (
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 shrink-0" aria-hidden>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              </span>
+              <span>Piso: {piso}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1017,7 +1057,7 @@ export default function PropiedadDetailPage() {
         )}
       </div>
 
-      {/* Amenidades (arriba de Ubicación): General, Políticas, Recreación — con iconos o ejemplo */}
+      {/* Amenidades: solo datos de Supabase; si no hay, mensaje fijo */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-100">
         <h2 className="font-serif text-xl font-semibold text-gray-900 mb-6">Amenidades</h2>
         <div className="space-y-6">
@@ -1060,99 +1100,49 @@ export default function PropiedadDetailPage() {
                 />
               </div>
               </>
+          ) : totalAmenidadesMostradas === 0 ? (
+            <p className="text-gray-600">Esta propiedad no cuenta con amenidades.</p>
           ) : (
             <>
-          {/* General */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3">General</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {usarAmenidadesEditadas && amenidadesMostradas.general.length > 0
-                ? amenidadesMostradas.general.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-gray-400">•</span>
-                      {typeof item === 'string' ? item : item.nombre || item}
-                    </div>
-                  ))
-                : usarAmenidadesEjemplo
-                ? amenidadesEjemploGeneral.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-gray-700">
-                      <span className="text-gray-500 shrink-0 w-6 h-6 flex items-center justify-center">
-                        {item.icon === 'accesibilidad' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11l-3 3m0 0l-3-3m3 3V8" /></svg>}
-                        {item.icon === 'portero' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-                        {item.icon === 'cocina' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>}
-                        {item.icon === 'seguridad' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>}
-                        {item.icon === 'elevador' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>}
-                      </span>
-                      <span>{item.label}</span>
-                    </div>
-                  ))
-                : amenidadesGeneral.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-gray-400">•</span>
-                      {typeof item === 'string' ? item : item.nombre || item}
-                    </div>
-                  ))}
-            </div>
-          </div>
-          {/* Políticas */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Políticas</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {usarAmenidadesEditadas && amenidadesMostradas.politicas.length > 0
-                ? amenidadesMostradas.politicas.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-gray-400">•</span>
-                      {typeof item === 'string' ? item : item.nombre || item}
-                    </div>
-                  ))
-                : usarAmenidadesEjemplo
-                ? amenidadesEjemploPoliticas.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-gray-700">
-                      <span className="text-gray-500 shrink-0 w-6 h-6 flex items-center justify-center">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7c0 2.76 2.24 5 5 5s5-2.24 5-5c0-2.76-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zm-5 5c-2.21 0-4 1.79-4 4v2h2v-2c0-1.1.9-2 2-2s2 .9 2 2v2h2v-2c0-2.21-1.79-4-4-4zm10 0c-2.21 0-4 1.79-4 4v2h2v-2c0-1.1.9-2 2-2s2 .9 2 2v2h2v-2c0-2.21-1.79-4-4-4z"/></svg>
-                      </span>
-                      <span>{item.label}</span>
-                    </div>
-                  ))
-                : amenidadesPoliticas.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-gray-400">•</span>
-                      {typeof item === 'string' ? item : item.nombre || item}
-                    </div>
-                  ))}
-            </div>
-          </div>
-          {/* Recreación */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Recreación</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {usarAmenidadesEditadas && amenidadesMostradas.recreacion.length > 0
-                ? amenidadesMostradas.recreacion.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-gray-400">•</span>
-                      {typeof item === 'string' ? item : item.nombre || item}
-                    </div>
-                  ))
-                : usarAmenidadesEjemplo
-                ? amenidadesEjemploRecreacion.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 text-gray-700">
-                      <span className="text-gray-500 shrink-0 w-6 h-6 flex items-center justify-center">
-                        {item.icon === 'alberca' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>}
-                        {item.icon === 'salon' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z" /></svg>}
-                        {item.icon === 'juegos' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                        {item.icon === 'gimnasio' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
-                      </span>
-                      <span>{item.label}</span>
-                    </div>
-                  ))
-                : amenidadesRecreacion.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700">
-                      <span className="text-gray-400">•</span>
-                      {typeof item === 'string' ? item : item.nombre || item}
-                    </div>
-                  ))}
-            </div>
-          </div>
+              {amenidadesMostradas.general.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">General</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {amenidadesMostradas.general.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-gray-700">
+                        <span className="text-gray-400">•</span>
+                        {typeof item === 'string' ? item : item.nombre || item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {amenidadesMostradas.politicas.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Políticas</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {amenidadesMostradas.politicas.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-gray-700">
+                        <span className="text-gray-400">•</span>
+                        {typeof item === 'string' ? item : item.nombre || item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {amenidadesMostradas.recreacion.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Recreación</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {amenidadesMostradas.recreacion.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-gray-700">
+                        <span className="text-gray-400">•</span>
+                        {typeof item === 'string' ? item : item.nombre || item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

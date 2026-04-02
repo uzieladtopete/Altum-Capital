@@ -68,14 +68,11 @@ export default function NosotrosPage() {
       <HeroNosotros />
 
       {/* Introducción */}
-      <section className="py-16 md:py-24 bg-white h-[310px]">
+      <section className="py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimateOnScroll direction="up">
-            <p className="font-serif text-2xl md:text-3xl text-gray-700 italic max-w-3xl mx-auto text-center leading-relaxed">
-              “Comprar o vender una propiedad es una decisión grande; por eso nos enfocamos en seguridad, proceso claro y acompañamiento en cada paso.”
-            </p>
-            <p className="mt-8 text-gray-600 text-center max-w-xl mx-auto">
-              Nuestro objetivo no es cerrar una venta, sino construir relaciones duraderas basadas en confianza y resultados.
+            <p className="font-serif text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto text-center leading-relaxed">
+              Somos un equipo donde asesoramos estratégicamente con transparencia total, realizamos operaciones claras, damos enfoque de plusvalía y acompañamiento integral; te guiamos desde la búsqueda hasta el cierre y postventa. Adquirimos un compromiso real: tu inversión la tratamos como si fuera nuestra.
             </p>
           </AnimateOnScroll>
         </div>

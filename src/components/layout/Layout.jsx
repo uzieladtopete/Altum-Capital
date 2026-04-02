@@ -12,6 +12,7 @@ export default function Layout() {
   const isHomePage = location.pathname === '/'
   const isBolsaDeTrabajoPage = location.pathname === '/bolsa-de-trabajo'
   const isAvisoPrivacidadPage = location.pathname === '/aviso-de-privacidad'
+  const isPropiedadDetailPage = location.pathname.startsWith('/propiedad/')
   const showFooterBar = !isAdminPage && location.pathname !== '/resultados'
   /** En la página del aviso no repetimos equipo + contacto debajo del texto legal */
   const showContactBlocks = showContact && !isAdminPage && !isAvisoPrivacidadPage
@@ -36,10 +37,12 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 pt-16 md:pt-20">
+      <main className="flex-1 pt-[88px] md:pt-[112px]">
         <Outlet />
       </main>
-      {showContactBlocks && !isHomePage && !isBolsaDeTrabajoPage && <TeamSection />}
+      {showContactBlocks && !isHomePage && !isBolsaDeTrabajoPage && !isPropiedadDetailPage && (
+        <TeamSection />
+      )}
       {showContactBlocks && <ContactSection />}
       {showFooterBar && <SiteFooterBar />}
     </div>

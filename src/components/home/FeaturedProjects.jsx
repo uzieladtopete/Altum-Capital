@@ -12,10 +12,10 @@ export default function FeaturedProjects() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimateOnScroll direction="up">
           <h2 className="font-serif text-3xl md:text-4xl font-semibold text-accent mb-2">
-            Proyectos recientes
+            Nuestro Inventario
           </h2>
           <p className="text-gray-600 max-w-2xl mb-12">
-            Una selección de nuestros trabajos más recientes en arquitectura residencial y comercial.
+            Propiedades seleccionadas de nuestro inventario en la zona metropolitana de Guadalajara.
           </p>
         </AnimateOnScroll>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -31,7 +31,7 @@ export default function FeaturedProjects() {
               to="/resultados"
               className="inline-flex items-center px-6 py-3 border border-accent text-accent font-medium rounded-lg hover:bg-accent hover:text-white transition-colors"
             >
-              Ver todos los proyectos
+              Ver todo el inventario
             </Link>
           </div>
         </AnimateOnScroll>

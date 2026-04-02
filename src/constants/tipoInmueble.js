@@ -1,6 +1,7 @@
 /** Valores permitidos para la columna `tipo_inmueble` (mismo criterio que el filtro público). */
 export const TIPOS_INMUEBLE_VALUES = [
   'Casa',
+  'Casa en condominio',
   'Departamento',
   'Terreno',
   'Local Comercial',

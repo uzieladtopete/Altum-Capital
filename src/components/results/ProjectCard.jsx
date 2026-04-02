@@ -53,7 +53,9 @@ export default function ProjectCard({ project, compact = false }) {
         </span>
       </div>
       <div className="p-4">
-        <h3 className={`font-serif font-semibold text-accent ${compact ? 'text-lg' : 'text-xl'}`}>
+        <h3
+          className={`font-serif font-semibold text-accent line-clamp-2 ${compact ? 'text-lg' : 'text-xl'}`}
+        >
           {name}
         </h3>
         <p className="mt-1 text-gray-600 text-sm">{location}</p>

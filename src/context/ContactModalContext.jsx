@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
 import { useToast } from './ToastContext'
+import { insertConsulta } from '../services/consultasSupabase'
 
 const ContactModalContext = createContext(null)
 
@@ -13,6 +13,7 @@ export function ContactModalProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false)
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
+  const [telefono, setTelefono] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [loading, setLoading] = useState(false)
   const { addToast } = useToast()
@@ -26,21 +27,19 @@ export function ContactModalProvider({ children }) {
       addToast({ type: 'error', message: 'Completa todos los campos' })
       return
     }
-    if (!supabase) {
-      addToast({ type: 'error', message: 'Envío no disponible. Configura la base de datos en el servidor.' })
-      return
-    }
     setLoading(true)
     try {
-      const { error } = await supabase.from('consultas').insert({
+      const { error } = await insertConsulta({
         nombre: nombre.trim(),
         email: email.trim(),
         mensaje: mensaje.trim(),
+        telefono: telefono.trim() || undefined,
       })
-      if (error) throw error
+      if (error) throw Object.assign(new Error(error.message || 'Error al enviar'), error)
       addToast({ type: 'success', message: 'Consulta enviada. Te contactaremos pronto.' })
       setNombre('')
       setEmail('')
+      setTelefono('')
       setMensaje('')
       closeContactModal()
     } catch (err) {
@@ -110,6 +109,22 @@ export function ContactModalProvider({ children }) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
                   disabled={loading}
                   required
+                />
+              </div>
+              <div>
+                <label htmlFor="contact-modal-telefono" className="block text-sm font-medium text-gray-700 mb-1">
+                  Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  id="contact-modal-telefono"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder="Ej. 33 1234 5678"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+                  disabled={loading}
                 />
               </div>
               <div>

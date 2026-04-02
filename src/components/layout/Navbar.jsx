@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useConsultasPendientesCount } from '../../hooks/useConsultasPendientesCount'
 
-const SCROLL_THRESHOLD = 24 // px: arriba de esto = "al inicio", se ve el logo
 const SCROLL_DURATION_MS = 650 // más rápido y natural al clic en logo
 
 /**
@@ -45,12 +45,18 @@ const navItems = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [atTop, setAtTop] = useState(true)
   const scrollToTopCancelRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, role, signOut } = useAuth()
-  const isAdmin = user && role === 'admin'
+  const { user, role, signOut, loading: authLoading } = useAuth()
+  const isAdmin = Boolean(user && String(role).toLowerCase() === 'admin')
+  const { count: pendientesConsultas, refresh: refreshConsultasCount } = useConsultasPendientesCount(
+    isAdmin && !authLoading
+  )
+
+  useEffect(() => {
+    if (isAdmin) refreshConsultasCount()
+  }, [location.pathname, isAdmin, refreshConsultasCount])
 
   const scrollToContact = () => {
     setMobileOpen(false)
@@ -60,13 +66,6 @@ export default function Navbar() {
       document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })
     }
   }
-
-  useEffect(() => {
-    const onScroll = () => setAtTop(window.scrollY < SCROLL_THRESHOLD)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   // Si el usuario hace scroll hacia abajo durante la animación de "subir", cancelarla para no trabar la página
   useEffect(() => {
@@ -93,7 +92,7 @@ export default function Navbar() {
   return (
     <header className="no-print fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center justify-between relative transition-all duration-300 ${atTop ? 'h-[72px] md:h-24' : 'h-[88px] md:h-[112px]'}`}>
+        <div className="flex items-center justify-between relative h-[88px] md:h-[112px]">
           <Link
             to="/"
             className="relative inline-flex items-center justify-center h-full min-w-[160px] md:min-w-[200px] z-10"
@@ -111,11 +110,11 @@ export default function Navbar() {
               }
             }}
           >
-            <div className={`overflow-hidden transition-all duration-300 ease-out ${atTop ? 'max-h-[46px] md:max-h-[56px]' : 'max-h-[72px] md:max-h-[88px]'}`}>
+            <div className="flex items-center h-full py-1">
               <img
                 src="/logo_altum_full.png"
                 alt="Altum Capital"
-                className="-my-[5px] h-[72px] w-auto md:h-[88px]"
+                className="w-auto max-w-[min(100vw-8rem,420px)] max-h-[68px] md:max-h-[84px] object-contain object-left"
               />
             </div>
           </Link>
@@ -162,24 +161,30 @@ export default function Navbar() {
                 )}
               </li>
             ))}
-            {isAdmin && (
-              <li>
+          </ul>
+
+          {/* Solo si hay sesión: Panel Admin + badge (siempre visible a la derecha), email, cerrar sesión */}
+          {user ? (
+            <div className="hidden md:flex items-center gap-3 sm:gap-4 z-10 shrink-0 min-w-0">
+              {isAdmin ? (
                 <Link
                   to="/admin"
-                  className={`text-sm font-medium tracking-wide transition-colors ${
+                  className={`inline-flex items-center gap-1.5 shrink-0 text-sm font-medium tracking-wide transition-colors ${
                     location.pathname.startsWith('/admin') ? 'text-accent' : 'text-gray-600 hover:text-accent'
                   }`}
                 >
-                  Panel Admin
+                  <span>Panel Admin</span>
+                  {pendientesConsultas > 0 ? (
+                    <span
+                      className="inline-flex items-center justify-center min-h-[1.25rem] min-w-[1.25rem] px-1 rounded-full bg-[#293d51] text-white text-[10px] font-semibold leading-none ring-2 ring-white"
+                      aria-label={`${pendientesConsultas} consultas sin revisar`}
+                    >
+                      {pendientesConsultas > 99 ? '99+' : pendientesConsultas}
+                    </span>
+                  ) : null}
                 </Link>
-              </li>
-            )}
-          </ul>
-
-          {/* Solo si hay sesión: email y cerrar sesión; Panel Admin solo cuando role === admin */}
-          {user ? (
-            <div className="hidden md:flex items-center gap-4 z-10">
-              <span className="text-xs text-gray-500">{user.email}</span>
+              ) : null}
+              <span className="text-xs text-gray-500 truncate min-w-0">{user.email}</span>
               <button
                 type="button"
                 onClick={async () => {
@@ -262,10 +267,18 @@ export default function Navbar() {
                 <li>
                   <Link
                     to="/admin"
-                    className="block py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between gap-2 py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg"
                     onClick={() => setMobileOpen(false)}
                   >
-                    Panel Admin
+                    <span>Panel Admin</span>
+                    {pendientesConsultas > 0 ? (
+                      <span
+                        className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[#293d51] text-white text-[10px] font-semibold leading-none shrink-0"
+                        aria-label={`${pendientesConsultas} consultas sin revisar`}
+                      >
+                        {pendientesConsultas > 99 ? '99+' : pendientesConsultas}
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               )}

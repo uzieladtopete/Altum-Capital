@@ -1,5 +1,5 @@
-/** Página de WhatsApp (w.app) de Altum Capital */
-const WHATSAPP_LINK = 'https://w.app/altum-capital'
+/** Enlace directo a WhatsApp (México +52 33 1769 5263) */
+const WHATSAPP_LINK = 'https://wa.me/5213317695263'
 
 /**
  * Botón flotante inferior derecho.

@@ -84,16 +84,29 @@ function parseRange(str) {
   }
 }
 
+/** Evita aplicar gte/lte con `Number('')` → 0: solo valores no vacíos y finitos. */
+function filterNumber(value) {
+  if (value == null) return null
+  const s = String(value).trim()
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
 async function getPropiedadesWithDetails(filters) {
   let query = supabase.from(TABLE).select(selectWithDetails)
 
   // Legacy filters (backward-compat)
   if (filters.ciudad) query = query.ilike('ciudad', `%${filters.ciudad}%`)
   if (filters.tipo) query = query.eq('tipo', filters.tipo)
-  if (filters.minPrecio) query = query.gte('precio', Number(filters.minPrecio))
-  if (filters.maxPrecio) query = query.lte('precio', Number(filters.maxPrecio))
-  if (filters.minM2) query = query.gte('m2', Number(filters.minM2))
-  if (filters.maxM2) query = query.lte('m2', Number(filters.maxM2))
+  const minPrecioN = filterNumber(filters.minPrecio)
+  if (minPrecioN != null) query = query.gte('precio', minPrecioN)
+  const maxPrecioN = filterNumber(filters.maxPrecio)
+  if (maxPrecioN != null) query = query.lte('precio', maxPrecioN)
+  const minM2N = filterNumber(filters.minM2)
+  if (minM2N != null) query = query.gte('m2', minM2N)
+  const maxM2N = filterNumber(filters.maxM2)
+  if (maxM2N != null) query = query.lte('m2', maxM2N)
 
   // New filters
   if (filters.operacion) query = query.eq('tipo', filters.operacion)
@@ -117,24 +130,27 @@ async function getPropiedadesWithDetails(filters) {
 
   // Client-side filtering for detalles_prop fields (recamaras, banos, estacionamientos)
   let results = data || []
-  if (filters.cuartos) {
-    const min = Number(filters.cuartos)
+  const cuartosMin = filterNumber(filters.cuartos)
+  if (cuartosMin != null) {
+    const min = cuartosMin
     results = results.filter((p) => {
       const det = Array.isArray(p.detalles_prop) ? p.detalles_prop[0] : p.detalles_prop
       const val = det?.recamaras
       return val != null && Number(val) >= min
     })
   }
-  if (filters.banos) {
-    const min = Number(filters.banos)
+  const banosMin = filterNumber(filters.banos)
+  if (banosMin != null) {
+    const min = banosMin
     results = results.filter((p) => {
       const det = Array.isArray(p.detalles_prop) ? p.detalles_prop[0] : p.detalles_prop
       const val = det?.banos
       return val != null && Number(val) >= min
     })
   }
-  if (filters.estacionamientos) {
-    const min = Number(filters.estacionamientos)
+  const estMin = filterNumber(filters.estacionamientos)
+  if (estMin != null) {
+    const min = estMin
     results = results.filter((p) => {
       const det = Array.isArray(p.detalles_prop) ? p.detalles_prop[0] : p.detalles_prop
       const val = det?.estacionamientos
@@ -155,10 +171,14 @@ export async function getPropiedades(filters = {}) {
     if (filters.operacion) q = q.eq('tipo', filters.operacion)
     if (filters.tipoInmueble) q = q.eq('tipo_inmueble', filters.tipoInmueble)
     if (filters.ubicacion) q = q.eq('ciudad', filters.ubicacion)
-    if (filters.minPrecio) q = q.gte('precio', Number(filters.minPrecio))
-    if (filters.maxPrecio) q = q.lte('precio', Number(filters.maxPrecio))
-    if (filters.minM2) q = q.gte('m2', Number(filters.minM2))
-    if (filters.maxM2) q = q.lte('m2', Number(filters.maxM2))
+    const minPF = filterNumber(filters.minPrecio)
+    if (minPF != null) q = q.gte('precio', minPF)
+    const maxPF = filterNumber(filters.maxPrecio)
+    if (maxPF != null) q = q.lte('precio', maxPF)
+    const minM2F = filterNumber(filters.minM2)
+    if (minM2F != null) q = q.gte('m2', minM2F)
+    const maxM2F = filterNumber(filters.maxM2)
+    if (maxM2F != null) q = q.lte('m2', maxM2F)
     if (filters.precio) {
       const { min, max } = parseRange(filters.precio)
       if (min !== undefined) q = q.gte('precio', min)

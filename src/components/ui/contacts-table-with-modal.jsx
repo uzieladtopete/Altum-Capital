@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
-import { Download, ChevronDown, X, Mail, User } from 'lucide-react'
+import { Download, ChevronDown, X, Mail, User, Phone, Check } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 10
 const STRENGTH_OPTIONS = ['Very strong', 'Good', 'Weak', 'Very weak']
@@ -62,6 +62,13 @@ export function ContactsTable({
   enableAnimations = true,
   showConnectionColumn = false,
   showTwitterColumn = false,
+  /** Columna Teléfono + Mensaje separado (panel Consultas) */
+  showPhoneColumn = false,
+  /** Marcar consulta como revisada (persiste en Supabase) */
+  showRevisadoColumn = false,
+  /** UUID de la fila cuyo check “revisado” está guardando en Supabase */
+  revisadoSavingId = null,
+  onRevisadoChange,
 }) {
   const [selectedContacts, setSelectedContacts] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -135,14 +142,18 @@ export function ContactsTable({
   const totalPages = Math.ceil(sortedAndFilteredContacts.length / ITEMS_PER_PAGE)
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Connection Strength', 'Twitter Followers', 'Description']
-    const rows = sortedAndFilteredContacts.map((c) => [
-      c.name,
-      c.email,
-      c.connectionStrength,
-      c.twitterFollowers,
-      c.description || '',
-    ])
+    const headers = showPhoneColumn
+      ? ['Nombre', 'Email', 'Teléfono', 'Mensaje']
+      : ['Name', 'Email', 'Connection Strength', 'Twitter Followers', 'Description']
+    const rows = showPhoneColumn
+      ? sortedAndFilteredContacts.map((c) => [c.name, c.email, c.phone || '', c.description || ''])
+      : sortedAndFilteredContacts.map((c) => [
+          c.name,
+          c.email,
+          c.connectionStrength,
+          c.twitterFollowers,
+          c.description || '',
+        ])
     const csv = [
       headers.join(','),
       ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
@@ -179,13 +190,17 @@ export function ContactsTable({
     },
   }
 
-  const gridCols = showConnectionColumn && showTwitterColumn
-    ? '40px 220px 140px 140px 200px 1fr 40px'
-    : showConnectionColumn
-      ? '40px 220px 140px 200px 1fr 40px'
-      : showTwitterColumn
+  const gridCols = showPhoneColumn && showRevisadoColumn
+    ? '40px 48px 220px 200px 140px minmax(200px,1fr) 40px'
+    : showPhoneColumn
+      ? '40px 220px 200px 140px minmax(200px,1fr) 40px'
+      : showConnectionColumn && showTwitterColumn
+      ? '40px 220px 140px 140px 200px 1fr 40px'
+      : showConnectionColumn
         ? '40px 220px 140px 200px 1fr 40px'
-        : '40px 220px 200px 1fr 40px'
+        : showTwitterColumn
+          ? '40px 220px 140px 200px 1fr 40px'
+          : '40px 220px 200px 1fr 40px'
 
   return (
     <div className={`w-full max-w-7xl mx-auto ${className}`}>
@@ -296,7 +311,7 @@ export function ContactsTable({
 
       <div className="bg-background border border-border/50 overflow-hidden rounded-lg relative">
         <div className="overflow-x-auto">
-          <div className="min-w-[700px]">
+          <div className={showPhoneColumn && showRevisadoColumn ? 'min-w-[928px]' : showPhoneColumn ? 'min-w-[880px]' : 'min-w-[700px]'}>
             <div
               className="px-3 py-3 text-xs font-medium text-muted-foreground/60 bg-muted/5 border-b border-border/30 text-left"
               style={{ display: 'grid', gridTemplateColumns: gridCols, columnGap: 0 }}
@@ -310,6 +325,15 @@ export function ContactsTable({
                   onChange={handleSelectAll}
                 />
               </div>
+              {showRevisadoColumn && (
+                <div
+                  className="flex items-center justify-center border-r border-border/20 px-1"
+                  title="Revisado en Supabase (columna revisado)"
+                >
+                  <Check size={14} className="opacity-50 text-muted-foreground" aria-hidden />
+                  <span className="sr-only">Revisado</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 border-r border-border/20 px-3">
                 <User size={14} className="opacity-40" />
                 <span>{title}</span>
@@ -328,8 +352,14 @@ export function ContactsTable({
                 <Mail size={14} className="opacity-40" />
                 <span>Email</span>
               </div>
+              {showPhoneColumn && (
+                <div className="flex items-center gap-1.5 border-r border-border/20 px-3">
+                  <Phone size={14} className="opacity-40" />
+                  <span>Teléfono</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 border-r border-border/20 px-3">
-                <span>Mensaje / Descripción</span>
+                <span>{showPhoneColumn ? 'Mensaje' : 'Mensaje / Descripción'}</span>
               </div>
               <div className="flex items-center justify-center px-3" />
             </div>
@@ -365,6 +395,23 @@ export function ContactsTable({
                             onChange={() => handleContactSelect(contact.id)}
                           />
                         </div>
+                        {showRevisadoColumn && (
+                          <div className="flex items-center justify-center border-r border-border/20 px-1">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded border-border/40 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                              style={mounted ? { accentColor: 'rgb(41, 61, 81)' } : {}}
+                              checked={!!contact.revisado}
+                              disabled={revisadoSavingId === contact.id || !onRevisadoChange}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                onRevisadoChange?.(contact.id, e.target.checked)
+                              }}
+                              aria-label={contact.revisado ? 'Marcar como no revisada' : 'Marcar como revisada'}
+                              title="Sincroniza con consultas.revisado en Supabase"
+                            />
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 min-w-0 border-r border-border/20 px-3">
                           <div className="inline-flex items-center gap-2 px-2 py-1 bg-muted/30 rounded-full">
                             <User size={14} className="opacity-50 flex-shrink-0" />
@@ -397,8 +444,23 @@ export function ContactsTable({
                             {contact.email}
                           </a>
                         </div>
+                        {showPhoneColumn && (
+                          <div className="flex items-center min-w-0 border-r border-border/20 px-3">
+                            {contact.phone ? (
+                              <a
+                                href={`tel:${String(contact.phone).replace(/\s+/g, '')}`}
+                                className="text-sm text-blue-500 hover:text-blue-600 truncate"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {contact.phone}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-muted-foreground/80">—</span>
+                            )}
+                          </div>
+                        )}
                         <div className="flex items-center min-w-0 border-r border-border/20 px-3">
-                          <span className="text-sm text-muted-foreground/80 truncate">
+                          <span className="text-sm text-muted-foreground/80 line-clamp-2">
                             {contact.description || '—'}
                           </span>
                         </div>
@@ -483,9 +545,27 @@ export function ContactsTable({
                         </p>
                       </div>
                     )}
+                    {showPhoneColumn && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide">Teléfono</span>
+                        </div>
+                        {selectedContactDetail.phone ? (
+                          <a
+                            href={`tel:${String(selectedContactDetail.phone).replace(/\s+/g, '')}`}
+                            className="text-sm text-blue-500 hover:text-blue-600"
+                          >
+                            {selectedContactDetail.phone}
+                          </a>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">—</p>
+                        )}
+                      </div>
+                    )}
                     <div>
                       <span className="text-xs text-muted-foreground uppercase tracking-wide">Mensaje</span>
-                      <p className="text-sm text-muted-foreground mt-1">{selectedContactDetail.description || '—'}</p>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{selectedContactDetail.description || '—'}</p>
                     </div>
                   </div>
                   <div className="pt-3 border-t border-border/50">
