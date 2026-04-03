@@ -14,7 +14,7 @@ export async function getTeamAdvisors() {
     .order('created_at', { ascending: true })
 
   if (error) {
-    console.error('[teamAdvisorsSupabase] getTeamAdvisors:', error)
+    console.error('[teamAdvisorsSupabase] getTeamAdvisors:', error.message || error)
     return []
   }
 
