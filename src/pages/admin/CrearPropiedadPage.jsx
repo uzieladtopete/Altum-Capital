@@ -16,14 +16,6 @@ function parseM2(value) {
   return Number.isFinite(n) ? n : NaN
 }
 
-const MUNICIPIOS = [
-  { value: 'Zapopan', label: 'Zapopan' },
-  { value: 'Guadalajara', label: 'Guadalajara' },
-  { value: 'Tlajomulco', label: 'Tlajomulco' },
-  { value: 'Tonalá', label: 'Tonalá' },
-  { value: 'Tlaquepaque', label: 'Tlaquepaque' },
-]
-
 const TIPOS = [
   { value: 'Venta', label: 'Venta' },
   { value: 'Renta', label: 'Renta' },
@@ -38,7 +30,7 @@ const ESTADOS = [
 
 const initialForm = {
   titulo: '',
-  ciudad: 'Zapopan',
+  ciudad: '',
   zona: '',
   tipo: 'Venta',
   tipo_inmueble: '',
@@ -199,6 +191,10 @@ export default function CrearPropiedadPage() {
       addToast({ type: 'error', message: 'El título es obligatorio.' })
       return
     }
+    if (!form.ciudad.trim()) {
+      addToast({ type: 'error', message: 'El municipio es obligatorio.' })
+      return
+    }
     if (Number.isNaN(precio) || precio < 0) {
       addToast({ type: 'error', message: 'Precio debe ser un número válido.' })
       return
@@ -268,7 +264,7 @@ export default function CrearPropiedadPage() {
       setIsSubmitting(true)
       const newProp = await addPropiedad({
         titulo,
-        ciudad: form.ciudad,
+        ciudad: form.ciudad.trim(),
         zona: form.zona?.trim() || null,
         tipo: form.tipo,
         tipo_inmueble: form.tipo_inmueble?.trim() || null,
@@ -339,16 +335,15 @@ export default function CrearPropiedadPage() {
           <label htmlFor="ciudad" className="block text-sm font-medium text-gray-700 mb-1">
             Municipio
           </label>
-          <select
+          <input
             id="ciudad"
+            type="text"
             value={form.ciudad}
             onChange={(e) => handleChange('ciudad', e.target.value)}
+            placeholder="Ej. Zapopan, Guadalajara, Tlaquepaque"
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900"
-          >
-            {MUNICIPIOS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
+            required
+          />
         </div>
         <div>
           <label htmlFor="zona" className="block text-sm font-medium text-gray-700 mb-1">
